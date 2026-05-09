@@ -1,8 +1,7 @@
 // lib/providers/auth_provider.dart
 //
-// PURPOSE: Bridges AuthService with the UI layer using ChangeNotifier.
-// Holds the current user state and exposes actions (sendOtp, verifyOtp,
-// createProfile, logout). Screens listen to this via Provider.of<AuthProvider>.
+// PURPOSE: Bridges AuthService with UI using ChangeNotifier.
+// Handles email+password login and registration flow.
 
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -10,13 +9,12 @@ import '../core/services/auth_service.dart';
 import '../models/user_model.dart';
 
 enum AuthStatus {
-  initial,        // App just launched, checking auth state
-  unauthenticated,// No user logged in → show splash/login
-  awaitingOtp,    // OTP sent, waiting for user to enter code
-  awaitingProfile,// New user – logged in but no Firestore profile yet
-  authenticated,  // Fully logged in with profile
-  loading,        // Any async operation in progress
-  error,          // Something went wrong
+  initial,
+  unauthenticated,
+  awaitingProfile,  // Logged in but no Firestore profile yet (new user)
+  authenticated,
+  loading,
+  error,
 }
 
 class AuthProvider extends ChangeNotifier {
@@ -25,9 +23,8 @@ class AuthProvider extends ChangeNotifier {
   AuthStatus _status = AuthStatus.initial;
   UserModel? _user;
   String? _errorMessage;
-  String? _verificationId; // Stored between OTP send and verify steps
 
-  // ─── Getters ──────────────────────────────────────────────────────────────
+  // ─── Getters ───────────────────────────────────────────────────────────────
   AuthStatus get status => _status;
   UserModel? get user => _user;
   String? get errorMessage => _errorMessage;
@@ -35,8 +32,7 @@ class AuthProvider extends ChangeNotifier {
   bool get isAuthenticated => _status == AuthStatus.authenticated;
   bool get isWorker => _user?.role == 'worker';
 
-  // ─── Initialize (called in main.dart on app start) ───────────────────────
-
+  // ─── Initialize ────────────────────────────────────────────────────────────
   Future<void> initialize() async {
     _status = AuthStatus.loading;
     notifyListeners();
@@ -56,50 +52,32 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ─── Step 1: Send OTP ─────────────────────────────────────────────────────
-
-  Future<void> sendOtp(String phoneNumber) async {
+  // ─── Sign In ───────────────────────────────────────────────────────────────
+  Future<void> signIn({
+    required String email,
+    required String password,
+  }) async {
     _status = AuthStatus.loading;
     _errorMessage = null;
     notifyListeners();
 
-    await _authService.sendOtp(
-      phoneNumber: phoneNumber,
-      onCodeSent: (verificationId) {
-        _verificationId = verificationId;
-        _status = AuthStatus.awaitingOtp;
-        notifyListeners();
-      },
-      onError: (error) {
-        _errorMessage = error;
-        _status = AuthStatus.error;
-        notifyListeners();
-      },
-    );
-  }
-
-  // ─── Step 2: Verify OTP ───────────────────────────────────────────────────
-
-  Future<void> verifyOtp(String smsCode) async {
-    if (_verificationId == null) return;
-
-    _status = AuthStatus.loading;
-    notifyListeners();
-
     try {
-      final user = await _authService.verifyOtp(
-        verificationId: _verificationId!,
-        smsCode: smsCode,
+      final user = await _authService.signInWithEmail(
+        email: email,
+        password: password,
       );
-      if (user == null) throw Exception('Verification failed.');
+      if (user == null) throw Exception('Sign in failed.');
 
-      final exists = await _authService.userProfileExists(user.uid);
-      if (exists) {
-        _user = await _authService.getUserProfile(user.uid);
-        _status = AuthStatus.authenticated;
+      final profile = await _authService.getUserProfile(user.uid);
+      if (profile == null) {
+        _status = AuthStatus.awaitingProfile;
       } else {
-        _status = AuthStatus.awaitingProfile; // New user → registration screen
+        _user = profile;
+        _status = AuthStatus.authenticated;
       }
+    } on FirebaseAuthException catch (e) {
+      _errorMessage = _friendlyError(e.code);
+      _status = AuthStatus.error;
     } catch (e) {
       _errorMessage = e.toString();
       _status = AuthStatus.error;
@@ -107,12 +85,36 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ─── Step 3: Create Profile (registration) ────────────────────────────────
+  // ─── Register (new user) ───────────────────────────────────────────────────
+  Future<void> register({
+    required String email,
+    required String password,
+  }) async {
+    _status = AuthStatus.loading;
+    _errorMessage = null;
+    notifyListeners();
 
+    try {
+      final user = await _authService.registerWithEmail(
+        email: email,
+        password: password,
+      );
+      if (user == null) throw Exception('Registration failed.');
+      _status = AuthStatus.awaitingProfile; // Go to profile setup
+    } on FirebaseAuthException catch (e) {
+      _errorMessage = _friendlyError(e.code);
+      _status = AuthStatus.error;
+    } catch (e) {
+      _errorMessage = e.toString();
+      _status = AuthStatus.error;
+    }
+    notifyListeners();
+  }
+
+  // ─── Create Profile (after registration) ──────────────────────────────────
   Future<void> createProfile({
     required String name,
-    required String role, // 'client' or 'worker'
-    String email = '',
+    required String role,
   }) async {
     _status = AuthStatus.loading;
     notifyListeners();
@@ -122,8 +124,8 @@ class AuthProvider extends ChangeNotifier {
       final newUser = UserModel(
         uid: firebaseUser.uid,
         name: name,
-        phone: firebaseUser.phoneNumber ?? '',
-        email: email,
+        phone: '',
+        email: firebaseUser.email ?? '',
         role: role,
         createdAt: DateTime.now(),
       );
@@ -137,8 +139,12 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ─── Sign Out ─────────────────────────────────────────────────────────────
+  // ─── Password Reset ────────────────────────────────────────────────────────
+  Future<void> sendPasswordReset(String email) async {
+    await _authService.sendPasswordReset(email);
+  }
 
+  // ─── Sign Out ──────────────────────────────────────────────────────────────
   Future<void> signOut() async {
     await _authService.signOut();
     _user = null;
@@ -150,5 +156,27 @@ class AuthProvider extends ChangeNotifier {
     _errorMessage = null;
     if (_status == AuthStatus.error) _status = AuthStatus.unauthenticated;
     notifyListeners();
+  }
+
+  // ─── Friendly error messages ───────────────────────────────────────────────
+  String _friendlyError(String code) {
+    switch (code) {
+      case 'user-not-found':
+        return 'No account found with this email. Please register first.';
+      case 'wrong-password':
+        return 'Incorrect password. Please try again.';
+      case 'email-already-in-use':
+        return 'This email is already registered. Please sign in.';
+      case 'invalid-email':
+        return 'Please enter a valid email address.';
+      case 'weak-password':
+        return 'Password must be at least 6 characters.';
+      case 'too-many-requests':
+        return 'Too many attempts. Please try again later.';
+      case 'network-request-failed':
+        return 'No internet connection. Please check your network.';
+      default:
+        return 'Something went wrong. Please try again.';
+    }
   }
 }

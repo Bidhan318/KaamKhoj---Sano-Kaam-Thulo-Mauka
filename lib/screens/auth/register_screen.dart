@@ -1,8 +1,8 @@
 // lib/screens/auth/register_screen.dart
 //
-// PURPOSE: Profile creation for new users after OTP verification.
-// Collects name, optional email, and role (Client or Worker).
-// On completion → HomeScreen.
+// PURPOSE: Profile creation for new users after email registration.
+// Collects name and role (Client or Worker).
+// Email is already known from Firebase Auth — no need to ask again.
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -20,14 +20,12 @@ class RegisterScreen extends StatefulWidget {
 
 class _RegisterScreenState extends State<RegisterScreen> {
   final _nameController = TextEditingController();
-  final _emailController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-  String _selectedRole = 'client'; // Default role
+  String _selectedRole = 'client';
 
   @override
   void dispose() {
     _nameController.dispose();
-    _emailController.dispose();
     super.dispose();
   }
 
@@ -37,7 +35,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     await context.read<AuthProvider>().createProfile(
           name: _nameController.text.trim(),
           role: _selectedRole,
-          email: _emailController.text.trim(),
         );
 
     if (!mounted) return;
@@ -79,17 +76,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 validator: (v) =>
                     (v == null || v.trim().isEmpty) ? 'Name is required' : null,
               ),
-              const SizedBox(height: 16),
-
-              // ── Email (optional) ──
-              TextFormField(
-                controller: _emailController,
-                keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(
-                  labelText: AppStrings.email,
-                  prefixIcon: Icon(Icons.email_outlined),
-                ),
-              ),
               const SizedBox(height: 24),
 
               // ── Role Selection ──
@@ -124,11 +110,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
               const SizedBox(height: 32),
 
               // ── Submit ──
-              ElevatedButton(
-                onPressed: auth.isLoading ? null : _onRegister,
-                child: auth.isLoading
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text('Create Account'),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: auth.isLoading ? null : _onRegister,
+                  child: auth.isLoading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                              color: Colors.white, strokeWidth: 2),
+                        )
+                      : const Text('Continue'),
+                ),
               ),
 
               // ── Error ──
@@ -147,7 +141,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 }
 
-/// A tappable card for selecting Client or Worker role
 class _RoleCard extends StatelessWidget {
   final String label;
   final IconData icon;
@@ -190,8 +183,7 @@ class _RoleCard extends StatelessWidget {
               label,
               style: TextStyle(
                 fontWeight: FontWeight.w600,
-                color:
-                    isSelected ? AppColors.primary : AppColors.textPrimary,
+                color: isSelected ? AppColors.primary : AppColors.textPrimary,
               ),
             ),
             const SizedBox(height: 4),

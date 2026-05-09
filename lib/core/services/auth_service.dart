@@ -1,10 +1,8 @@
 // lib/core/services/auth_service.dart
 //
-// PURPOSE: All Firebase Authentication logic lives here.
-// Screens and providers call these methods – they never touch
-// FirebaseAuth directly. Keeps auth logic testable and swappable.
-//
-// Flow: Phone → OTP sent → OTP verified → User doc created in Firestore
+// PURPOSE: All Firebase Authentication logic using Email + Password.
+// Free, no billing needed, works on Android and Web.
+// Flow: Enter email + password → logged in → profile created in Firestore
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -14,65 +12,40 @@ class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // ─── Current User ─────────────────────────────────────────────────────────
-
-  /// The currently logged-in Firebase user (null if not logged in).
+  // ─── Current User ──────────────────────────────────────────────────────────
   User? get currentUser => _auth.currentUser;
-
-  /// Stream that emits whenever auth state changes (login / logout).
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 
-  // ─── Phone OTP Authentication ──────────────────────────────────────────────
-
-  /// Step 1: Send OTP to the provided phone number.
-  /// [onCodeSent] callback receives the verificationId needed for step 2.
-  /// [onError] callback receives a human-readable error message.
-  Future<void> sendOtp({
-    required String phoneNumber,       // e.g. '+9779841000000'
-    required Function(String verificationId) onCodeSent,
-    required Function(String error) onError,
+  // ─── Sign In with Email + Password ────────────────────────────────────────
+  Future<User?> signInWithEmail({
+    required String email,
+    required String password,
   }) async {
-    await _auth.verifyPhoneNumber(
-      phoneNumber: phoneNumber,
-      timeout: const Duration(seconds: 60),
-
-      // OTP sent successfully
-      codeSent: (String verificationId, int? resendToken) {
-        onCodeSent(verificationId);
-      },
-
-      // Automatic verification (Android SMS auto-read)
-      verificationCompleted: (PhoneAuthCredential credential) async {
-        await _auth.signInWithCredential(credential);
-      },
-
-      verificationFailed: (FirebaseAuthException e) {
-        onError(e.message ?? 'OTP verification failed.');
-      },
-
-      codeAutoRetrievalTimeout: (String verificationId) {
-        // Timeout – user must enter OTP manually (already handled via codeSent)
-      },
+    final result = await _auth.signInWithEmailAndPassword(
+      email: email,
+      password: password,
     );
-  }
-
-  /// Step 2: Verify the OTP entered by the user.
-  /// Returns the signed-in [User] on success, null on failure.
-  Future<User?> verifyOtp({
-    required String verificationId,
-    required String smsCode,
-  }) async {
-    final PhoneAuthCredential credential = PhoneAuthProvider.credential(
-      verificationId: verificationId,
-      smsCode: smsCode,
-    );
-    final UserCredential result = await _auth.signInWithCredential(credential);
     return result.user;
   }
 
-  // ─── User Profile in Firestore ────────────────────────────────────────────
+  // ─── Register with Email + Password ───────────────────────────────────────
+  Future<User?> registerWithEmail({
+    required String email,
+    required String password,
+  }) async {
+    final result = await _auth.createUserWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
+    return result.user;
+  }
 
-  /// Creates a new user document in /users/{uid} after first login.
+  // ─── Password Reset ────────────────────────────────────────────────────────
+  Future<void> sendPasswordReset(String email) async {
+    await _auth.sendPasswordResetEmail(email: email);
+  }
+
+  // ─── User Profile in Firestore ─────────────────────────────────────────────
   Future<void> createUserProfile(UserModel user) async {
     await _firestore
         .collection('users')
@@ -80,24 +53,19 @@ class AuthService {
         .set(user.toMap(), SetOptions(merge: true));
   }
 
-  /// Fetches the UserModel for the currently logged-in user.
-  /// Returns null if the document does not exist yet (new user).
   Future<UserModel?> getUserProfile(String uid) async {
     final doc = await _firestore.collection('users').doc(uid).get();
     if (!doc.exists) return null;
     return UserModel.fromMap(doc.data()!);
   }
 
-  // ─── Sign Out ─────────────────────────────────────────────────────────────
-
-  Future<void> signOut() async {
-    await _auth.signOut();
-  }
-
-  // ─── Check if profile exists (to decide: new registration vs returning) ───
-
   Future<bool> userProfileExists(String uid) async {
     final doc = await _firestore.collection('users').doc(uid).get();
     return doc.exists;
+  }
+
+  // ─── Sign Out ──────────────────────────────────────────────────────────────
+  Future<void> signOut() async {
+    await _auth.signOut();
   }
 }
