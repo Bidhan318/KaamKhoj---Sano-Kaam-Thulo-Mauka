@@ -1,0 +1,52 @@
+name: kaamkhoj_v1
+description: KaamKhoj - Sano Kaam Thulo Mauka. A local worker discovery platform for Nepal.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Firebase - Backend services
+  firebase_core: ^2.27.0
+  firebase_auth: ^4.17.0
+  cloud_firestore: ^4.15.0
+  firebase_storage: ^11.6.0
+
+  # Maps & Location (flutter_map = free, no API key needed)
+  flutter_map: ^6.1.0
+  latlong2: ^0.9.0
+  geolocator: ^11.0.0
+  # geocoding removed — replaced with Nominatim via http package
+
+  # HTTP (for Nominatim reverse geocoding)
+  http: ^1.2.0
+
+  # State Management
+  provider: ^6.1.2
+
+  # Chat
+  flutter_chat_ui: ^1.6.13
+
+  # Media
+  image_picker: ^1.0.7
+
+  # Permissions (Android/iOS only — guarded with kIsWeb in code)
+  permission_handler: ^11.3.0
+
+  # UI Utilities
+  cupertino_icons: ^1.0.6
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
+    - assets/icons/
