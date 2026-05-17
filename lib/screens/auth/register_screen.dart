@@ -1,9 +1,4 @@
 // lib/screens/auth/register_screen.dart
-//
-// PURPOSE: Profile creation for new users after email registration.
-// Collects name and role (Client or Worker).
-// Email is already known from Firebase Auth — no need to ask again.
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_strings.dart';
@@ -20,22 +15,43 @@ class RegisterScreen extends StatefulWidget {
 
 class _RegisterScreenState extends State<RegisterScreen> {
   final _nameController = TextEditingController();
+  final _rateController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   String _selectedRole = 'client';
+  String _selectedSkill = 'Electrician';
+
+  final List<String> _skills = [
+    'Electrician',
+    'Plumber',
+    'Carpenter',
+    'Mason',
+    'Tutor',
+    'Painter',
+    'Mechanic',
+    'Cleaner',
+    'Gardner',
+    'Other',
+  ];
 
   @override
   void dispose() {
     _nameController.dispose();
+    _rateController.dispose();
     super.dispose();
   }
 
   void _onRegister() async {
     if (!_formKey.currentState!.validate()) return;
+    final auth = context.read<AuthProvider>();
 
-    await context.read<AuthProvider>().createProfile(
-          name: _nameController.text.trim(),
-          role: _selectedRole,
-        );
+    await auth.createProfile(
+      name: _nameController.text.trim(),
+      role: _selectedRole,
+      skill: _selectedRole == 'worker' ? _selectedSkill : null,
+      ratePerDay: _selectedRole == 'worker'
+          ? (double.tryParse(_rateController.text.trim()) ?? 0.0)
+          : null,
+    );
 
     if (!mounted) return;
     if (context.read<AuthProvider>().isAuthenticated) {
@@ -59,10 +75,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Tell us about yourself',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
+              Text('Tell us about yourself',
+                  style: Theme.of(context).textTheme.titleLarge),
               const SizedBox(height: 24),
 
               // ── Name ──
@@ -79,10 +93,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
               const SizedBox(height: 24),
 
               // ── Role Selection ──
-              Text(
-                AppStrings.selectRole,
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
+              Text(AppStrings.selectRole,
+                  style: Theme.of(context).textTheme.titleLarge),
               const SizedBox(height: 12),
               Row(
                 children: [
@@ -107,9 +119,46 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                 ],
               ),
+
+              // ── Worker Extra Fields (only shown when worker selected) ──
+              if (_selectedRole == 'worker') ...[
+                const SizedBox(height: 24),
+                Text('Worker Details',
+                    style: Theme.of(context).textTheme.titleLarge),
+                const SizedBox(height: 12),
+
+                DropdownButtonFormField<String>(
+                  value: _selectedSkill,
+                  decoration: const InputDecoration(
+                    labelText: 'Your Skill',
+                    prefixIcon: Icon(Icons.build_outlined),
+                  ),
+                  items: _skills
+                      .map((s) => DropdownMenuItem(value: s, child: Text(s)))
+                      .toList(),
+                  onChanged: (v) => setState(() => _selectedSkill = v!),
+                ),
+                const SizedBox(height: 16),
+
+                TextFormField(
+                  controller: _rateController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Rate per Day (NPR)',
+                    prefixIcon: Icon(Icons.currency_rupee),
+                    hintText: 'e.g. 1500',
+                  ),
+                  validator: (v) {
+                    if (_selectedRole != 'worker') return null;
+                    if (v == null || v.trim().isEmpty) return 'Rate is required';
+                    if (double.tryParse(v) == null) return 'Enter a valid number';
+                    return null;
+                  },
+                ),
+              ],
+
               const SizedBox(height: 32),
 
-              // ── Submit ──
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -125,13 +174,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
               ),
 
-              // ── Error ──
               if (auth.errorMessage != null) ...[
                 const SizedBox(height: 16),
-                Text(
-                  auth.errorMessage!,
-                  style: const TextStyle(color: AppColors.error),
-                ),
+                Text(auth.errorMessage!,
+                    style: const TextStyle(color: AppColors.error)),
               ],
             ],
           ),
@@ -179,20 +225,16 @@ class _RoleCard extends StatelessWidget {
                 size: 36,
                 color: isSelected ? AppColors.primary : AppColors.textSecondary),
             const SizedBox(height: 8),
-            Text(
-              label,
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                color: isSelected ? AppColors.primary : AppColors.textPrimary,
-              ),
-            ),
+            Text(label,
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: isSelected ? AppColors.primary : AppColors.textPrimary,
+                )),
             const SizedBox(height: 4),
-            Text(
-              description,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                  fontSize: 11, color: AppColors.textSecondary),
-            ),
+            Text(description,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                    fontSize: 11, color: AppColors.textSecondary)),
           ],
         ),
       ),

@@ -1,9 +1,4 @@
 // lib/screens/chat/chat_screen.dart
-//
-// PURPOSE: Real-time messaging screen between a client and worker.
-// Listens to Firestore message stream (via ChatService) and renders
-// a simple chat UI. Uses the Chat System Algorithm from Section 3.1.
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
@@ -13,9 +8,20 @@ import '../../models/worker_model.dart';
 import '../../providers/auth_provider.dart';
 
 class ChatScreen extends StatefulWidget {
-  final WorkerModel worker; // The other participant
+  // Works for BOTH directions:
+  // Client → Worker: pass worker object
+  // Worker → Client: pass otherUid + otherName directly
+  final WorkerModel? worker;
+  final String? otherUid;
+  final String? otherName;
 
-  const ChatScreen({super.key, required this.worker});
+  const ChatScreen({
+    super.key,
+    this.worker,         // Client tapping a worker
+    this.otherUid,       // Worker contacting a client
+    this.otherName,
+  }) : assert(worker != null || otherUid != null,
+            'Provide either worker or otherUid');
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
@@ -28,15 +34,25 @@ class _ChatScreenState extends State<ChatScreen> {
 
   late String _myUid;
   late String _otherUid;
+  late String _otherName;
+  late String _otherAvatarLetter;
 
   @override
   void initState() {
     super.initState();
     final auth = context.read<AuthProvider>();
     _myUid = auth.user!.uid;
-    _otherUid = widget.worker.uid;
 
-    // Mark messages as read when opening chat
+    // Resolve other party details
+    if (widget.worker != null) {
+      _otherUid = widget.worker!.uid;
+      _otherName = widget.worker!.name;
+    } else {
+      _otherUid = widget.otherUid!;
+      _otherName = widget.otherName ?? 'User';
+    }
+    _otherAvatarLetter = _otherName.isNotEmpty ? _otherName[0].toUpperCase() : '?';
+
     _chatService.markMessagesAsRead(
       currentUserUid: _myUid,
       otherUserUid: _otherUid,
@@ -61,7 +77,6 @@ class _ChatScreenState extends State<ChatScreen> {
       text: text,
     );
 
-    // Scroll to bottom after sending
     if (_scrollController.hasClients) {
       _scrollController.animateTo(
         _scrollController.position.maxScrollExtent + 80,
@@ -79,30 +94,28 @@ class _ChatScreenState extends State<ChatScreen> {
           children: [
             CircleAvatar(
               radius: 18,
-              backgroundColor: AppColors.textLight,
-              backgroundImage: widget.worker.profileImage != null
-                  ? NetworkImage(widget.worker.profileImage!)
+              backgroundColor: AppColors.primary.withOpacity(0.15),
+              backgroundImage: widget.worker?.profileImage != null
+                  ? NetworkImage(widget.worker!.profileImage!)
                   : null,
-              child: widget.worker.profileImage == null
-                  ? Text(
-                      widget.worker.name[0],
+              child: widget.worker?.profileImage == null
+                  ? Text(_otherAvatarLetter,
                       style: const TextStyle(
                           color: AppColors.primary,
-                          fontWeight: FontWeight.bold),
-                    )
+                          fontWeight: FontWeight.bold))
                   : null,
             ),
             const SizedBox(width: 10),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(widget.worker.name,
-                    style: const TextStyle(fontSize: 15)),
-                Text(
-                  widget.worker.skills.take(2).join(', '),
-                  style: const TextStyle(
-                      fontSize: 11, fontWeight: FontWeight.normal),
-                ),
+                Text(_otherName, style: const TextStyle(fontSize: 15)),
+                if (widget.worker != null)
+                  Text(
+                    widget.worker!.skills.take(2).join(', '),
+                    style: const TextStyle(
+                        fontSize: 11, fontWeight: FontWeight.normal),
+                  ),
               ],
             ),
           ],
@@ -114,8 +127,8 @@ class _ChatScreenState extends State<ChatScreen> {
           // ── Messages ──
           Expanded(
             child: StreamBuilder<List<ChatMessage>>(
-              stream: _chatService.getMessages(
-                  uid1: _myUid, uid2: _otherUid),
+              stream:
+                  _chatService.getMessages(uid1: _myUid, uid2: _otherUid),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
@@ -213,7 +226,8 @@ class _ChatBubble extends StatelessWidget {
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
         margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        padding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         constraints: BoxConstraints(
           maxWidth: MediaQuery.of(context).size.width * 0.72,
         ),

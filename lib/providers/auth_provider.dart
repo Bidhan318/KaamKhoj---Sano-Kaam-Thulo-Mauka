@@ -1,8 +1,4 @@
 // lib/providers/auth_provider.dart
-//
-// PURPOSE: Bridges AuthService with UI using ChangeNotifier.
-// Handles email+password login and registration flow.
-
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../core/services/auth_service.dart';
@@ -11,7 +7,7 @@ import '../models/user_model.dart';
 enum AuthStatus {
   initial,
   unauthenticated,
-  awaitingProfile,  // Logged in but no Firestore profile yet (new user)
+  awaitingProfile,
   authenticated,
   loading,
   error,
@@ -24,7 +20,6 @@ class AuthProvider extends ChangeNotifier {
   UserModel? _user;
   String? _errorMessage;
 
-  // ─── Getters ───────────────────────────────────────────────────────────────
   AuthStatus get status => _status;
   UserModel? get user => _user;
   String? get errorMessage => _errorMessage;
@@ -85,7 +80,7 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ─── Register (new user) ───────────────────────────────────────────────────
+  // ─── Register ──────────────────────────────────────────────────────────────
   Future<void> register({
     required String email,
     required String password,
@@ -100,7 +95,7 @@ class AuthProvider extends ChangeNotifier {
         password: password,
       );
       if (user == null) throw Exception('Registration failed.');
-      _status = AuthStatus.awaitingProfile; // Go to profile setup
+      _status = AuthStatus.awaitingProfile;
     } on FirebaseAuthException catch (e) {
       _errorMessage = _friendlyError(e.code);
       _status = AuthStatus.error;
@@ -111,16 +106,22 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ─── Create Profile (after registration) ──────────────────────────────────
+  // ─── Create Profile ────────────────────────────────────────────────────────
+  /// Called from RegisterScreen after role/name/skill selection.
+  /// For workers: also creates a /workers/{uid} document automatically.
   Future<void> createProfile({
     required String name,
     required String role,
+    String? skill,
+    double? ratePerDay,
   }) async {
     _status = AuthStatus.loading;
     notifyListeners();
 
     try {
       final firebaseUser = _authService.currentUser!;
+
+      // 1. Create user profile in /users collection
       final newUser = UserModel(
         uid: firebaseUser.uid,
         name: name,
@@ -130,6 +131,18 @@ class AuthProvider extends ChangeNotifier {
         createdAt: DateTime.now(),
       );
       await _authService.createUserProfile(newUser);
+
+      // 2. If worker — also create /workers document automatically
+      if (role == 'worker' && skill != null && ratePerDay != null) {
+        await _authService.createWorkerProfile(
+          uid: firebaseUser.uid,
+          name: name,
+          email: firebaseUser.email ?? '',
+          skill: skill,
+          ratePerDay: ratePerDay,
+        );
+      }
+
       _user = newUser;
       _status = AuthStatus.authenticated;
     } catch (e) {
@@ -158,7 +171,6 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ─── Friendly error messages ───────────────────────────────────────────────
   String _friendlyError(String code) {
     switch (code) {
       case 'user-not-found':

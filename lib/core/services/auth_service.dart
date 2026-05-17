@@ -1,22 +1,17 @@
 // lib/core/services/auth_service.dart
-//
-// PURPOSE: All Firebase Authentication logic using Email + Password.
-// Free, no billing needed, works on Android and Web.
-// Flow: Enter email + password → logged in → profile created in Firestore
-
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/user_model.dart';
+import '../../models/worker_model.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // ─── Current User ──────────────────────────────────────────────────────────
   User? get currentUser => _auth.currentUser;
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 
-  // ─── Sign In with Email + Password ────────────────────────────────────────
+  // ─── Email Auth ────────────────────────────────────────────────────────────
   Future<User?> signInWithEmail({
     required String email,
     required String password,
@@ -28,7 +23,6 @@ class AuthService {
     return result.user;
   }
 
-  // ─── Register with Email + Password ───────────────────────────────────────
   Future<User?> registerWithEmail({
     required String email,
     required String password,
@@ -40,12 +34,11 @@ class AuthService {
     return result.user;
   }
 
-  // ─── Password Reset ────────────────────────────────────────────────────────
   Future<void> sendPasswordReset(String email) async {
     await _auth.sendPasswordResetEmail(email: email);
   }
 
-  // ─── User Profile in Firestore ─────────────────────────────────────────────
+  // ─── User Profile ──────────────────────────────────────────────────────────
   Future<void> createUserProfile(UserModel user) async {
     await _firestore
         .collection('users')
@@ -62,6 +55,36 @@ class AuthService {
   Future<bool> userProfileExists(String uid) async {
     final doc = await _firestore.collection('users').doc(uid).get();
     return doc.exists;
+  }
+
+  // ─── Worker Profile ────────────────────────────────────────────────────────
+  /// Creates a worker document in /workers/{uid} automatically on registration.
+  /// Location starts at 0,0 and gets updated live when the worker opens the app.
+  Future<void> createWorkerProfile({
+    required String uid,
+    required String name,
+    required String email,
+    required String skill,
+    required double ratePerDay,
+  }) async {
+    final workerData = WorkerModel(
+      uid: uid,
+      name: name,
+      phone: email, // using email as identifier since we switched from phone
+      skills: [skill],
+      ratePerDay: ratePerDay,
+      latitude: 0.0,  // will be updated when worker opens the app
+      longitude: 0.0,
+      isAvailable: true,
+      rating: 0.0,
+      totalReviews: 0,
+      address: '',
+    );
+
+    await _firestore
+        .collection('workers')
+        .doc(uid)
+        .set(workerData.toMap(), SetOptions(merge: true));
   }
 
   // ─── Sign Out ──────────────────────────────────────────────────────────────
