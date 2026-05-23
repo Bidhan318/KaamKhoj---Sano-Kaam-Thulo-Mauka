@@ -1,4 +1,3 @@
-// lib/providers/auth_provider.dart
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../core/services/auth_service.dart';
@@ -32,11 +31,11 @@ class AuthProvider extends ChangeNotifier {
     _status = AuthStatus.loading;
     notifyListeners();
 
-    final currentUser = _authService.currentUser;
+    final currentUser = _authService.currentUser;  //checks with firebase (auth_service.dart) for if someone is already logged in 
     if (currentUser == null) {
       _status = AuthStatus.unauthenticated;
     } else {
-      final profile = await _authService.getUserProfile(currentUser.uid);
+      final profile = await _authService.getUserProfile(currentUser.uid); //gets logged in users profile from firebase /users collection
       if (profile == null) {
         _status = AuthStatus.awaitingProfile;
       } else {
@@ -55,7 +54,7 @@ class AuthProvider extends ChangeNotifier {
     _status = AuthStatus.loading;
     _errorMessage = null;
     notifyListeners();
-
+ 
     try {
       final user = await _authService.signInWithEmail(
         email: email,

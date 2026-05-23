@@ -27,7 +27,7 @@ Future<void> main() async {
   // GoogleService-Info.plist on iOS to be configured)
   await Firebase.initializeApp();
 
-  runApp(const KaamKhojApp());
+  runApp(const KaamKhojApp()); //starts flutter ui
 }
 
 class KaamKhojApp extends StatelessWidget {

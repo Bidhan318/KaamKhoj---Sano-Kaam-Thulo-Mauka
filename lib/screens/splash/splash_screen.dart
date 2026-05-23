@@ -30,9 +30,9 @@ class _SplashScreenState extends State<SplashScreen> {
 
   Future<void> _init() async {
     final authProvider = context.read<AuthProvider>();
-    await authProvider.initialize();
+    await authProvider.initialize(); //checks firebase for if someone is already logged in to directly open app elsee goes to login screeen
 
-    if (!mounted) return;
+    if (!mounted) return; //safety check for if widgets are gone by the time this async function finishes then close the func
 
     if (authProvider.isAuthenticated) {
       Navigator.pushReplacement(
@@ -55,20 +55,7 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // App icon placeholder – replace with actual asset
-            Container(
-              width: 100,
-              height: 100,
-              decoration: BoxDecoration(
-                color: AppColors.textLight,
-                borderRadius: BorderRadius.circular(24),
-              ),
-              child: const Icon(
-                Icons.work_outline_rounded,
-                size: 60,
-                color: AppColors.primary,
-              ),
-            ),
+            Image.asset('assets/images/logo.png', width: 100, height: 100),
             const SizedBox(height: 24),
             const Text(
               AppStrings.appName,

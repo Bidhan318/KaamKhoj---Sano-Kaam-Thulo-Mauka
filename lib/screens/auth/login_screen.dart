@@ -27,7 +27,7 @@ class _LoginScreenState extends State<LoginScreen>
   final _signInEmailController = TextEditingController();
   final _signInPasswordController = TextEditingController();
   final _signInFormKey = GlobalKey<FormState>();
-
+  
   // Register controllers
   final _registerEmailController = TextEditingController();
   final _registerPasswordController = TextEditingController();
@@ -55,7 +55,7 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   void _onSignIn(AuthProvider auth) {
-    if (!_signInFormKey.currentState!.validate()) return;
+    if (!_signInFormKey.currentState!.validate()) return;  //checks if all forms fields are filled correctly
     auth.signIn(
       email: _signInEmailController.text.trim(),
       password: _signInPasswordController.text,
@@ -88,10 +88,10 @@ class _LoginScreenState extends State<LoginScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Consumer<AuthProvider>(
+      body: Consumer<AuthProvider>(  //wheneever data for AuthProvider changes, update ui
         builder: (context, auth, _) {
           // Navigate after auth state changes
-          WidgetsBinding.instance.addPostFrameCallback((_) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {  
             if (auth.status == AuthStatus.authenticated) {
               Navigator.pushReplacement(
                 context,

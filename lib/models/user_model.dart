@@ -24,9 +24,9 @@ class UserModel {
   });
 
   // Converts Firestore document snapshot → UserModel
-  factory UserModel.fromMap(Map<String, dynamic> map) {
+  factory UserModel.fromMap(Map<String, dynamic> map) {  //converts raw Firestore data (a Map) into a proper Dart object
     return UserModel(
-      uid: map['uid'] ?? '',
+      uid: map['uid'] ?? '',  //?? means "if this field is missing, use this default value"
       name: map['name'] ?? '',
       phone: map['phone'] ?? '',
       email: map['email'] ?? '',

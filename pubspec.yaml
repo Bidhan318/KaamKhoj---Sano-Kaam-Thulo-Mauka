@@ -10,19 +10,18 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # Firebase - Backend services
+  # Firebase
   firebase_core: ^2.27.0
   firebase_auth: ^4.17.0
   cloud_firestore: ^4.15.0
   firebase_storage: ^11.6.0
 
-  # Maps & Location (flutter_map = free, no API key needed)
+  # Maps & Location
   flutter_map: ^6.1.0
   latlong2: ^0.9.0
   geolocator: ^11.0.0
-  # geocoding removed — replaced with Nominatim via http package
 
-  # HTTP (for Nominatim reverse geocoding)
+  # HTTP
   http: ^1.2.0
 
   # State Management
@@ -34,19 +33,25 @@ dependencies:
   # Media
   image_picker: ^1.0.7
 
-  # Permissions (Android/iOS only — guarded with kIsWeb in code)
+  # Permissions
   permission_handler: ^11.3.0
 
-  # UI Utilities
+  # UI
   cupertino_icons: ^1.0.6
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.0
+  flutter_launcher_icons: ^0.13.1
 
 flutter:
   uses-material-design: true
   assets:
     - assets/images/
     - assets/icons/
+
+flutter_icons:
+  android: true
+  ios: false
+  image_path: "assets/images/logo.png"
