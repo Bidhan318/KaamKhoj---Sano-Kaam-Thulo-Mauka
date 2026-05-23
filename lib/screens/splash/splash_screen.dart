@@ -55,7 +55,20 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Image.asset('assets/images/logo.png', width: 100, height: 100),
+             // App icon placeholder – replace with actual asset
+            Container(
+              width: 100,
+              height: 100,
+              decoration: BoxDecoration(
+                color: AppColors.textLight,
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: const Icon(
+                Icons.work_outline_rounded,
+                size: 60,
+                color: AppColors.primary,
+              ),
+            ),
             const SizedBox(height: 24),
             const Text(
               AppStrings.appName,

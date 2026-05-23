@@ -36,6 +36,15 @@ dependencies:
   # Permissions
   permission_handler: ^11.3.0
 
+  # Biometric / Fingerprint
+  local_auth: ^2.1.8
+
+  # Secure credential storage (encrypted keystore)
+  flutter_secure_storage: ^9.0.0
+
+  # General preferences (fingerprint enabled flag)
+  shared_preferences: ^2.2.2
+
   # UI
   cupertino_icons: ^1.0.6
 
