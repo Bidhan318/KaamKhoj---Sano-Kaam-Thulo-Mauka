@@ -11,6 +11,9 @@ import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_strings.dart';
 import '../../providers/auth_provider.dart';
 import '../auth/login_screen.dart';
+import '../auth/register_screen.dart';
+import '../auth/fingerprint_setup_screen.dart';
+import '../auth/fingerprint_lock_screen.dart';
 import '../home/home_screen.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -29,21 +32,53 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _init() async {
-    final authProvider = context.read<AuthProvider>();
-    await authProvider.initialize(); //checks firebase for if someone is already logged in to directly open app elsee goes to login screeen
+    final auth = context.read<AuthProvider>();
+    await auth.initialize(); //checks firebase for if someone is already logged in to directly open app elsee goes to login screeen
 
     if (!mounted) return; //safety check for if widgets are gone by the time this async function finishes then close the func
 
-    if (authProvider.isAuthenticated) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
-      );
-    } else {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
-      );
+    switch (auth.status) {
+      case AuthStatus.authenticated:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const HomeScreen()),
+        );
+        break;
+ 
+      case AuthStatus.requiresBiometricUnlock:
+        // Active Firebase session but need fingerprint gate
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const FingerprintLockScreen()),
+        );
+        break;
+ 
+      case AuthStatus.awaitingProfile:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const RegisterScreen()),
+        );
+        break;
+ 
+      case AuthStatus.awaitingFingerprintSetup:
+        // Shouldn't normally hit this from splash (it happens post-login)
+        // but handle it defensively
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => FingerprintSetupScreen(
+              email: auth.pendingEmail ?? '',
+              password: auth.pendingPassword ?? '',
+            ),
+          ),
+        );
+        break;
+ 
+      default:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const LoginScreen()),
+        );
     }
   }
 

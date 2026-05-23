@@ -94,7 +94,7 @@ class _ChatScreenState extends State<ChatScreen> {
           children: [
             CircleAvatar(
               radius: 18,
-              backgroundColor: AppColors.primary.withOpacity(0.15),
+              backgroundColor: AppColors.primary.withValues(alpha: 0.15),
               backgroundImage: widget.worker?.profileImage != null
                   ? NetworkImage(widget.worker!.profileImage!)
                   : null,
@@ -256,7 +256,7 @@ class _ChatBubble extends StatelessWidget {
               _formatTime(message.timestamp),
               style: TextStyle(
                 color: isMe
-                    ? Colors.white.withOpacity(0.7)
+                    ? Colors.white.withValues(alpha: 0.7)
                     : AppColors.textSecondary,
                 fontSize: 10,
               ),

@@ -32,7 +32,7 @@ class WorkerProfileScreen extends StatelessWidget {
               background: worker.profileImage != null
                   ? Image.network(worker.profileImage!, fit: BoxFit.cover)
                   : Container(
-                      color: AppColors.primary.withOpacity(0.15),
+                      color: AppColors.primary.withValues(alpha: 0.15),
                       child: Center(
                         child: Text(
                           worker.name[0].toUpperCase(),
@@ -60,8 +60,8 @@ class WorkerProfileScreen extends StatelessWidget {
                           horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
                         color: worker.isAvailable
-                            ? AppColors.success.withOpacity(0.1)
-                            : AppColors.error.withOpacity(0.1),
+                            ? AppColors.success.withValues(alpha: 0.1)
+                            : AppColors.error.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Row(
@@ -239,7 +239,7 @@ class _StatBox extends StatelessWidget {
         margin: const EdgeInsets.only(right: 8),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: AppColors.primary.withOpacity(0.05),
+          color: AppColors.primary.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: AppColors.divider),
         ),

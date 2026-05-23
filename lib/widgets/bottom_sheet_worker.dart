@@ -46,7 +46,7 @@ class BottomSheetWorker extends StatelessWidget {
               // Avatar
               CircleAvatar(
                 radius: 32,
-                backgroundColor: AppColors.primary.withOpacity(0.1),
+                backgroundColor: AppColors.primary.withValues(alpha: 0.1),
                 backgroundImage: worker.profileImage != null
                     ? NetworkImage(worker.profileImage!)
                     : null,
@@ -94,8 +94,8 @@ class BottomSheetWorker extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color: worker.isAvailable
-                      ? AppColors.success.withOpacity(0.1)
-                      : AppColors.error.withOpacity(0.1),
+                      ? AppColors.success.withValues(alpha: 0.1)
+                      : AppColors.error.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(

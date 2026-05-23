@@ -55,7 +55,7 @@ class JobDetailScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               decoration: BoxDecoration(
-                color: _statusColor(job.status).withOpacity(0.1),
+                color: _statusColor(job.status).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(

@@ -96,7 +96,7 @@ class AppTheme {
 
       // Chip (skill tags on worker profiles)
       chipTheme: ChipThemeData(
-        backgroundColor: AppColors.primary.withOpacity(0.1),
+        backgroundColor: AppColors.primary.withValues(alpha: 0.1),
         labelStyle: const TextStyle(color: AppColors.primary, fontSize: 12),
         padding: const EdgeInsets.symmetric(horizontal: 8),
       ),

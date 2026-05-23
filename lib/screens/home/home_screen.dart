@@ -16,6 +16,7 @@ import '../job/job_detail_screen.dart';
 import '../worker/worker_list_screen.dart';
 import '../auth/login_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../core/services/biometric_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -412,6 +413,33 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
           const Divider(),
+
+          //--fingerprint biometric removal option ----- DONT TOUCH
+          FutureBuilder<bool>(
+            future: BiometricService.instance.isBiometricEnabled().then((enabled) async {
+            if (!enabled) return false;
+            final saved = await BiometricService.instance.getSavedCredentials();
+            return saved?.email == auth.user?.email;
+            }),
+            builder: (context, snapshot) {
+              if (snapshot.data != true) return const SizedBox.shrink();
+                return ListTile(
+              leading: const Icon(Icons.fingerprint, color: AppColors.error),
+              title: const Text('Remove Fingerprint Login',
+              style: TextStyle(color: AppColors.error)),
+              onTap: () async {
+              await BiometricService.instance.clearCredentials();
+              if (!mounted) return;
+              setState(() {});
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Fingerprint login removed.')),
+             );
+            },
+         );
+        },
+        ),
+//--------------------------------------------------------------------------------
           ListTile(
             leading: const Icon(Icons.logout, color: AppColors.error),
             title: const Text('Logout',
@@ -509,7 +537,7 @@ class _JobCard extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: AppColors.success.withOpacity(0.1),
+                      color: AppColors.success.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(

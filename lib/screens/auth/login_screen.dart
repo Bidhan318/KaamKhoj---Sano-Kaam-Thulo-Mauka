@@ -2,16 +2,18 @@
 //
 // PURPOSE: Email + Password auth screen.
 // Has two tabs: Sign In (existing user) and Register (new user).
-// 100% free — no SMS, no billing needed.
+
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_strings.dart';
+import '../../core/services/biometric_service.dart';
 import '../../providers/auth_provider.dart';
 import 'register_screen.dart';
+import 'fingerprint_setup_screen.dart';
 import '../home/home_screen.dart';
-
+ 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -37,10 +39,26 @@ class _LoginScreenState extends State<LoginScreen>
   bool _signInPasswordVisible = false;
   bool _registerPasswordVisible = false;
 
+   // Biometric availability — loaded once on initState
+  bool _biometricAvailable = false;
+  bool _biometricEnabled = false;
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _loadBiometricState();
+  }
+  Future<void> _loadBiometricState() async {
+    final svc = BiometricService.instance;
+    final available = await svc.isBiometricAvailable();
+    final enabled = await svc.isBiometricEnabled();
+    if (mounted) {
+      setState(() {
+        _biometricAvailable = available;
+        _biometricEnabled = enabled;
+      });
+    }
   }
 
   @override
@@ -53,6 +71,39 @@ class _LoginScreenState extends State<LoginScreen>
     _registerConfirmController.dispose();
     super.dispose();
   }
+  
+  void _handleAuthStatus(AuthProvider auth) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      switch (auth.status) {
+        case AuthStatus.authenticated:
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const HomeScreen()),
+          );
+          break;
+        case AuthStatus.awaitingFingerprintSetup:
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => FingerprintSetupScreen(
+                email: auth.pendingEmail ?? _signInEmailController.text.trim(),
+                password: auth.pendingPassword ?? _signInPasswordController.text,
+              ),
+            ),
+          );
+          break;
+        case AuthStatus.awaitingProfile:
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const RegisterScreen()),
+          );
+          break;
+        default:
+          break;
+      }
+    });
+  }
 
   void _onSignIn(AuthProvider auth) {
     if (!_signInFormKey.currentState!.validate()) return;  //checks if all forms fields are filled correctly
@@ -60,6 +111,10 @@ class _LoginScreenState extends State<LoginScreen>
       email: _signInEmailController.text.trim(),
       password: _signInPasswordController.text,
     );
+  }
+
+  void _onFingerprintLogin(AuthProvider auth) {
+    auth.signInWithBiometric();
   }
 
   void _onRegister(AuthProvider auth) {
@@ -91,20 +146,7 @@ class _LoginScreenState extends State<LoginScreen>
       body: Consumer<AuthProvider>(  //wheneever data for AuthProvider changes, update ui
         builder: (context, auth, _) {
           // Navigate after auth state changes
-          WidgetsBinding.instance.addPostFrameCallback((_) {  
-            if (auth.status == AuthStatus.authenticated) {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (_) => const HomeScreen()),
-              );
-            } else if (auth.status == AuthStatus.awaitingProfile) {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (_) => const RegisterScreen()),
-              );
-            }
-          });
-
+         _handleAuthStatus(auth);
           return SafeArea(
             child: Column(
               children: [
@@ -223,6 +265,64 @@ class _LoginScreenState extends State<LoginScreen>
                     : const Text('Sign In'),
               ),
             ),
+ 
+            // ── Fingerprint login button ──
+            // Shown only when the user has previously saved credentials
+            if (_biometricAvailable && _biometricEnabled) ...[
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  const Expanded(child: Divider()),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Text('or',
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodySmall
+                            ?.copyWith(color: AppColors.textSecondary)),
+                  ),
+                  const Expanded(child: Divider()),
+                ],
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed:
+                      auth.isLoading ? null : () => _onFingerprintLogin(auth),
+                  icon: const Icon(Icons.fingerprint, size: 22),
+                  label: const Text('Login with Fingerprint'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.primary,
+                    side: const BorderSide(color: AppColors.primary),
+                    minimumSize: const Size(double.infinity, 48),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ),
+            ],
+ 
+            // ── Fingerprint available but not yet set up ──
+            // Subtle hint so users know it's possible
+            if (_biometricAvailable && !_biometricEnabled) ...[
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.fingerprint,
+                      size: 16, color: AppColors.textSecondary),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Sign in to set up fingerprint login',
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodySmall
+                        ?.copyWith(color: AppColors.textSecondary),
+                  ),
+                ],
+              ),
+            ],
             _buildErrorBox(auth),
           ],
         ),
@@ -318,7 +418,7 @@ class _LoginScreenState extends State<LoginScreen>
       margin: const EdgeInsets.only(top: 16),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.error.withOpacity(0.1),
+        color: AppColors.error.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
