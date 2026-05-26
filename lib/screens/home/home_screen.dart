@@ -17,6 +17,8 @@ import '../worker/worker_list_screen.dart';
 import '../auth/login_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../core/services/biometric_service.dart';
+import '../chat/chat_list_screen.dart';
+import '../worker/worker_profile_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -125,10 +127,37 @@ class _HomeScreenState extends State<HomeScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => BottomSheetWorker(worker: worker),
+      enableDrag: true,
+      builder: (_) => DraggableScrollableSheet(
+        initialChildSize: 0.45,
+        minChildSize: 0.35,
+        maxChildSize: 0.92, // CHANGED: cap at 92% instead of 1.0
+        expand: false,
+        // CHANGED: listen to sheet size — when dragged near top, push full profile
+        builder: (_, scrollController) {
+          return NotificationListener<DraggableScrollableNotification>(
+            onNotification: (notification) {
+              if (notification.extent >= 0.88) {
+                // CHANGED: auto-navigate to full profile when dragged high enough
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => WorkerProfileScreen(worker: worker),
+                  ),
+                );
+              }
+              return false;
+            },
+            child: BottomSheetWorker(
+              worker: worker,
+              scrollController: scrollController,
+            ),
+          );
+        },
+      ),
     );
   }
-
   void _onJobTapped(JobModel job) {
     Navigator.push(
       context,
@@ -401,6 +430,15 @@ class _HomeScreenState extends State<HomeScreen> {
                         builder: (_) => const WorkerListScreen()));
               },
             ),
+            ListTile(                                      // ← ADD THIS
+              leading: const Icon(Icons.chat_outlined),
+              title: const Text('Messages'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => const ChatListScreen()));
+              },
+            ),
           ] else ...[
             ListTile(
               leading: const Icon(Icons.work_outline),
@@ -409,6 +447,15 @@ class _HomeScreenState extends State<HomeScreen> {
                 Navigator.pop(context);
                 Navigator.push(context,
                     MaterialPageRoute(builder: (_) => const JobListScreen()));
+              },
+            ),
+            ListTile(                                      // ← ADD THIS
+              leading: const Icon(Icons.chat_outlined),
+              title: const Text('Messages'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => const ChatListScreen()));
               },
             ),
           ],

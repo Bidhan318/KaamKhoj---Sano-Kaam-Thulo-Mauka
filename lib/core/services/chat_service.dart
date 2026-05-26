@@ -59,7 +59,9 @@ class ChatService {
   /// Sends a message and updates the chat metadata document for listing chats.
   Future<void> sendMessage({
     required String senderUid,
+    required String senderName,
     required String receiverUid,
+    required String receiverName,
     required String text,
   }) async {
     final chatId = getChatId(senderUid, receiverUid);
@@ -83,6 +85,7 @@ class ChatService {
     final chatRef = _firestore.collection('chats').doc(chatId);
     batch.set(chatRef, {
       'participants': [senderUid, receiverUid],
+      'participantNames': {senderUid: senderName, receiverUid: receiverName},
       'lastMessage': text,
       'lastMessageTime': Timestamp.fromDate(DateTime.now()),
       'lastSenderId': senderUid,

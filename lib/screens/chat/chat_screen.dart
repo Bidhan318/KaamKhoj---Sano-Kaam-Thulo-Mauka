@@ -71,9 +71,12 @@ class _ChatScreenState extends State<ChatScreen> {
     if (text.isEmpty) return;
 
     _messageController.clear();
+    final auth = context.read<AuthProvider>();
     await _chatService.sendMessage(
       senderUid: _myUid,
+      senderName: auth.user!.name,
       receiverUid: _otherUid,
+      receiverName: _otherName,
       text: text,
     );
 

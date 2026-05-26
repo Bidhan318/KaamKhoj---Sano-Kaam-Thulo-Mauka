@@ -11,16 +11,15 @@ dependencies:
     sdk: flutter
 
   # Firebase
-  firebase_core: ^2.27.0
-  firebase_auth: ^4.17.0
-  cloud_firestore: ^4.15.0
-  firebase_storage: ^11.6.0
+  firebase_core: ^4.0.0
+  firebase_auth: ^6.0.0
+  cloud_firestore: ^6.0.0
+  firebase_storage: ^13.0.0
 
   # Maps & Location
   flutter_map: ^6.1.0
   latlong2: ^0.9.0
   geolocator: ^11.0.0
-
   # HTTP
   http: ^1.2.0
 
