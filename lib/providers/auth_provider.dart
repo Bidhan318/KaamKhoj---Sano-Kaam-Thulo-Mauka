@@ -322,6 +322,8 @@ class AuthProvider extends ChangeNotifier {
         return 'No account found with this email. Please register first.';
       case 'wrong-password':
         return 'Incorrect password. Please try again.';
+      case 'invalid-credential':
+        return 'Incorrect email or password. Please try again.';
       case 'email-already-in-use':
         return 'This email is already registered. Please sign in.';
       case 'invalid-email':
