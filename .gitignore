@@ -1,0 +1,41 @@
+# Flutter
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+ECHO is on.
+# Android
+android/local.properties
+android/app/google-services.json
+android/.gradle/
+android/captures/
+android/gradlew
+android/gradlew.bat
+ECHO is on.
+# iOS
+ios/Flutter/Generated.xcconfig
+ios/Flutter/flutter_export_environment.sh
+ios/Flutter/ephemeral/
+ios/Pods/
+ios/.symlinks/
+ECHO is on.
+# IDE
+.idea/
+.vscode/
+*.iml
+ECHO is on.
+# Windows
+windows/flutter/ephemeral/
+ECHO is on.
+# macOS
+macos/Flutter/ephemeral/
+ECHO is on.
+# Environment / Secrets
+.env
+firebase_options.dart
+*.jks
+*.p12
+*.keystore
