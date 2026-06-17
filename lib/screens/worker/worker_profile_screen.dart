@@ -9,12 +9,17 @@ import '../chat/chat_screen.dart';
 
 class WorkerProfileScreen extends StatelessWidget {
   final WorkerModel worker;
+<<<<<<< HEAD
   final bool hideActionButtons;
   const WorkerProfileScreen({
     super.key,
     required this.worker,
     this.hideActionButtons = false,
   });
+=======
+
+  const WorkerProfileScreen({super.key, required this.worker});
+>>>>>>> 304825e0e665734c4baba1dff3ff8d2dd2559630
 
   @override
   Widget build(BuildContext context) {
@@ -45,8 +50,12 @@ class WorkerProfileScreen extends StatelessWidget {
                 const SizedBox(height: 8),
                 _buildRatingsBreakdown(),
                 const SizedBox(height: 24),
+<<<<<<< HEAD
                 if (!hideActionButtons)
                   _buildActionButtons(context),
+=======
+                _buildActionButtons(context),
+>>>>>>> 304825e0e665734c4baba1dff3ff8d2dd2559630
               ]),
             ),
           ),
@@ -190,11 +199,15 @@ class WorkerProfileScreen extends StatelessWidget {
           child: SafeArea(
             child: IconButton(
               icon: const Icon(Icons.arrow_back, color: Colors.white),
+<<<<<<< HEAD
               onPressed: () {
                 if (Navigator.canPop(context)) {
                   Navigator.pop(context);
                 }
               },
+=======
+              onPressed: () => Navigator.pop(context),
+>>>>>>> 304825e0e665734c4baba1dff3ff8d2dd2559630
             ),
           ),
         ),
@@ -538,4 +551,8 @@ class _StatCard extends StatelessWidget {
       ),
     );
   }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> 304825e0e665734c4baba1dff3ff8d2dd2559630

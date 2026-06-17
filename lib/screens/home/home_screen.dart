@@ -13,7 +13,10 @@ import '../../providers/worker_provider.dart';
 import '../../widgets/bottom_sheet_worker.dart';
 import '../job/post_job_screen.dart';
 import '../job/job_detail_screen.dart';
+<<<<<<< HEAD
 import '../worker/worker_self_profile_screen.dart';
+=======
+>>>>>>> 304825e0e665734c4baba1dff3ff8d2dd2559630
 import '../worker/worker_list_screen.dart';
 import '../auth/login_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -426,6 +429,7 @@ class _HomeScreenState extends State<HomeScreen> {
               onTap: () {
                 Navigator.pop(context);
                 Navigator.push(
+<<<<<<< HEAD
                   context,
                   MaterialPageRoute(
                     builder: (_) => const WorkerListScreen(),
@@ -435,16 +439,29 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
 
             ListTile(
+=======
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const WorkerListScreen()));
+              },
+            ),
+            ListTile(                                      // ← ADD THIS
+>>>>>>> 304825e0e665734c4baba1dff3ff8d2dd2559630
               leading: const Icon(Icons.chat_outlined),
               title: const Text('Messages'),
               onTap: () {
                 Navigator.pop(context);
+<<<<<<< HEAD
                 Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (_) => const ChatListScreen(),
                   ),
                 );
+=======
+                Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => const ChatListScreen()));
+>>>>>>> 304825e0e665734c4baba1dff3ff8d2dd2559630
               },
             ),
           ] else ...[
@@ -453,6 +470,7 @@ class _HomeScreenState extends State<HomeScreen> {
               title: const Text('Browse Jobs'),
               onTap: () {
                 Navigator.pop(context);
+<<<<<<< HEAD
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -477,10 +495,18 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
 
             ListTile(
+=======
+                Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => const JobListScreen()));
+              },
+            ),
+            ListTile(                                      // ← ADD THIS
+>>>>>>> 304825e0e665734c4baba1dff3ff8d2dd2559630
               leading: const Icon(Icons.chat_outlined),
               title: const Text('Messages'),
               onTap: () {
                 Navigator.pop(context);
+<<<<<<< HEAD
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -491,6 +517,13 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
 
+=======
+                Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => const ChatListScreen()));
+              },
+            ),
+          ],
+>>>>>>> 304825e0e665734c4baba1dff3ff8d2dd2559630
           const Divider(),
 
           //--fingerprint biometric removal option ----- DONT TOUCH

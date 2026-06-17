@@ -26,8 +26,11 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+<<<<<<< HEAD
 	<key>NSPhotoLibraryUsageDescription</key>
     <string>Upload profile photo</string>
+=======
+>>>>>>> 304825e0e665734c4baba1dff3ff8d2dd2559630
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
