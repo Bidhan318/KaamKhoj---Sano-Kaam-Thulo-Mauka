@@ -19,6 +19,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../core/services/biometric_service.dart';
 import '../chat/chat_list_screen.dart';
 import '../worker/worker_profile_screen.dart';
+import '../worker/worker_self_profile_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -589,6 +590,19 @@ class _HomeScreenState extends State<HomeScreen> {
               },
             ),
             ListTile(
+              leading: const Icon(Icons.person_outline),
+              title: const Text('My Profile'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const WorkerSelfProfileScreen(),
+                  ),
+                );
+              },
+            ),
+            ListTile(
               leading: const Icon(Icons.chat_outlined),
               title: const Text('Messages'),
               onTap: () {
@@ -775,4 +789,4 @@ class _JobCard extends StatelessWidget {
       ),
     );
   }
-}
+}
