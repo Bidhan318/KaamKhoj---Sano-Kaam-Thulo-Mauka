@@ -243,7 +243,7 @@ return Padding(
 padding: const EdgeInsets.only(top: 36), // height of the banner
 child: WorkerProfileScreen(
 worker: worker,
-hideActionButtons: true, // we added this optional param below
+ // we added this optional param below
 ),
 );
 }
@@ -345,24 +345,23 @@ String? imageUrl = _imageRemoved ? null : _currentImageUrl;
 
 try {
 // Upload new image if picked
-if (_pickedImage != null) {
-imageUrl = await workerProvider.uploadProfileImage(
-uid: widget.worker.uid,
-imageFile: _pickedImage!,
-);
-}
 
-final updated = widget.worker.copyWith(
-name: _nameCon.text.trim(),
-phone: _phoneCon.text.trim(),
-skills: _skills,
-ratePerDay: double.tryParse(_rateCon.text.trim()) ??
-widget.worker.ratePerDay,
-isAvailable: _isAvailable,
-profileImage: imageUrl,
-clearProfileImage: _imageRemoved && imageUrl == null,
-);
 
+final updated = WorkerModel(
+  uid: widget.worker.uid,
+  name: _nameCon.text.trim(),
+  phone: _phoneCon.text.trim(),
+  profileImage: imageUrl,
+  skills: _skills,
+  ratePerDay: double.tryParse(_rateCon.text.trim()) ??
+      widget.worker.ratePerDay,
+  rating: widget.worker.rating,
+  totalReviews: widget.worker.totalReviews,
+  isAvailable: _isAvailable,
+  latitude: widget.worker.latitude,
+  longitude: widget.worker.longitude,
+  address: widget.worker.address,
+);
 await workerProvider.saveWorkerProfile(updated);
 
 if (!mounted) return;
@@ -380,7 +379,7 @@ SnackBar(content: Text('Failed to save: $e')),
 
 @override
 Widget build(BuildContext context) {
-final isSaving = context.watch<WorkerProvider>().isSaving;
+final isSaving = context.watch<WorkerProvider>().isLoading;
 
 return SingleChildScrollView(
 padding: const EdgeInsets.fromLTRB(16, 20, 16, 40),

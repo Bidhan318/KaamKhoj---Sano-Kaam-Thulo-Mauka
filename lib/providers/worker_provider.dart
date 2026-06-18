@@ -4,11 +4,6 @@
 // Also manages a worker's own profile (for users with role='worker').
 // The HomeScreen and WorkerListScreen consume this provider.
 
-<<<<<<< HEAD
-import 'dart:io';
-import 'package:firebase_storage/firebase_storage.dart';
-=======
->>>>>>> 304825e0e665734c4baba1dff3ff8d2dd2559630
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../core/services/location_service.dart';
@@ -31,39 +26,10 @@ class WorkerProvider extends ChangeNotifier {
   WorkerModel? get selectedWorker => _selectedWorker;
   WorkerModel? get myWorkerProfile => _myWorkerProfile;
   bool get isLoading => _isLoading;
-<<<<<<< HEAD
-  bool _isSaving = false;
-  bool get isSaving => _isSaving;
-=======
->>>>>>> 304825e0e665734c4baba1dff3ff8d2dd2559630
   String? get errorMessage => _errorMessage;
   double get searchRadius => _searchRadius;
   String get skillFilter => _skillFilter;
 
-<<<<<<< HEAD
-  Future<String> uploadProfileImage({
-    required String uid,
-    required File imageFile,
-  }) async {
-    try {
-      _isSaving = true;
-      notifyListeners();
-
-      final ref = FirebaseStorage.instance
-          .ref()
-          .child('worker_profiles')
-          .child('$uid.jpg');
-
-      await ref.putFile(imageFile);
-      final url = await ref.getDownloadURL();
-      return url;
-    } finally {
-      _isSaving = false;
-      notifyListeners();
-    }
-  }
-=======
->>>>>>> 304825e0e665734c4baba1dff3ff8d2dd2559630
   // ─── Fetch Nearby Workers ─────────────────────────────────────────────────
 
   Future<void> fetchNearbyWorkers({
@@ -100,10 +66,6 @@ class WorkerProvider extends ChangeNotifier {
       clientLon: clientLon,
       radiusKm: _searchRadius,
     );
-<<<<<<< HEAD
-
-=======
->>>>>>> 304825e0e665734c4baba1dff3ff8d2dd2559630
   }
 
   // ─── Select a Worker (from map tap or list tap) ───────────────────────────
@@ -143,23 +105,6 @@ class WorkerProvider extends ChangeNotifier {
 
   /// Creates or updates the worker's profile in Firestore.
   Future<void> saveWorkerProfile(WorkerModel profile) async {
-<<<<<<< HEAD
-    try {
-      _isSaving = true;
-      notifyListeners();
-
-      await _firestore
-          .collection('workers')
-          .doc(profile.uid)
-          .set(profile.toMap(), SetOptions(merge: true));
-
-      _myWorkerProfile = profile;
-    } finally {
-      _isSaving = false;
-      notifyListeners();
-    }
-  }
-=======
     await _firestore
         .collection('workers')
         .doc(profile.uid)
@@ -168,7 +113,6 @@ class WorkerProvider extends ChangeNotifier {
     notifyListeners();
   }
 
->>>>>>> 304825e0e665734c4baba1dff3ff8d2dd2559630
   /// Toggles the worker's availability status.
   Future<void> toggleAvailability(String uid) async {
     if (_myWorkerProfile == null) return;
@@ -179,8 +123,4 @@ class WorkerProvider extends ChangeNotifier {
     _myWorkerProfile = _myWorkerProfile!.copyWith(isAvailable: newStatus);
     notifyListeners();
   }
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> 304825e0e665734c4baba1dff3ff8d2dd2559630

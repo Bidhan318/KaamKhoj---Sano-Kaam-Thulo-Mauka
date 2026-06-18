@@ -1,18 +1,11 @@
 // lib/screens/auth/login_screen.dart
 //
 // PURPOSE: Email + Password auth screen.
-<<<<<<< HEAD
 // Has two views: Sign In (existing user) and Register (new user), toggled seamlessly.
 
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-=======
-// Has two tabs: Sign In (existing user) and Register (new user).
-
-
-import 'package:flutter/material.dart';
->>>>>>> 304825e0e665734c4baba1dff3ff8d2dd2559630
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_strings.dart';
@@ -31,12 +24,8 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen>
     with SingleTickerProviderStateMixin {
-<<<<<<< HEAD
   
   bool _isLogin = true; // true = Sign In, false = Register
-=======
-  late TabController _tabController;
->>>>>>> 304825e0e665734c4baba1dff3ff8d2dd2559630
 
   // Sign In controllers
   final _signInEmailController = TextEditingController();
@@ -56,7 +45,6 @@ class _LoginScreenState extends State<LoginScreen>
   bool _biometricAvailable = false;
   bool _biometricEnabled = false;
 
-<<<<<<< HEAD
   late AnimationController _enterController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
@@ -82,14 +70,6 @@ class _LoginScreenState extends State<LoginScreen>
     _enterController.forward();
   }
   
-=======
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-    _loadBiometricState();
-  }
->>>>>>> 304825e0e665734c4baba1dff3ff8d2dd2559630
   Future<void> _loadBiometricState() async {
     final svc = BiometricService.instance;
     final available = await svc.isBiometricAvailable();
@@ -104,11 +84,7 @@ class _LoginScreenState extends State<LoginScreen>
 
   @override
   void dispose() {
-<<<<<<< HEAD
     _enterController.dispose();
-=======
-    _tabController.dispose();
->>>>>>> 304825e0e665734c4baba1dff3ff8d2dd2559630
     _signInEmailController.dispose();
     _signInPasswordController.dispose();
     _registerEmailController.dispose();
@@ -117,7 +93,6 @@ class _LoginScreenState extends State<LoginScreen>
     super.dispose();
   }
   
-<<<<<<< HEAD
   void _toggleView() {
     _enterController.reverse().then((_) {
       if (!mounted) return;
@@ -129,8 +104,6 @@ class _LoginScreenState extends State<LoginScreen>
     });
   }
 
-=======
->>>>>>> 304825e0e665734c4baba1dff3ff8d2dd2559630
   void _handleAuthStatus(AuthProvider auth) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -165,11 +138,7 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   void _onSignIn(AuthProvider auth) {
-<<<<<<< HEAD
     if (!_signInFormKey.currentState!.validate()) return;
-=======
-    if (!_signInFormKey.currentState!.validate()) return;  //checks if all forms fields are filled correctly
->>>>>>> 304825e0e665734c4baba1dff3ff8d2dd2559630
     auth.signIn(
       email: _signInEmailController.text.trim(),
       password: _signInPasswordController.text,
@@ -206,7 +175,6 @@ class _LoginScreenState extends State<LoginScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-<<<<<<< HEAD
       body: Consumer<AuthProvider>(
         builder: (context, auth, _) {
           _handleAuthStatus(auth);
@@ -236,59 +204,6 @@ class _LoginScreenState extends State<LoginScreen>
                   ),
                 ),
               ),
-=======
-      body: Consumer<AuthProvider>(  //wheneever data for AuthProvider changes, update ui
-        builder: (context, auth, _) {
-          // Navigate after auth state changes
-         _handleAuthStatus(auth);
-          return SafeArea(
-            child: Column(
-              children: [
-                // ── Header ────────────────────────────────────────────────────
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 40, 24, 0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Welcome to\n${AppStrings.appName}',
-                        style: Theme.of(context).textTheme.headlineMedium,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Find skilled workers near you',
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                      const SizedBox(height: 24),
-                    ],
-                  ),
-                ),
-
-                // ── Tabs ──────────────────────────────────────────────────────
-                TabBar(
-                  controller: _tabController,
-                  tabs: const [
-                    Tab(text: 'Sign In'),
-                    Tab(text: 'Register'),
-                  ],
-                  labelColor: AppColors.primary,
-                  unselectedLabelColor: Colors.grey,
-                  indicatorColor: AppColors.primary,
-                  onTap: (_) => auth.clearError(),
-                ),
-
-                // ── Tab Content ───────────────────────────────────────────────
-                Expanded(
-                  child: TabBarView(
-                    controller: _tabController,
-                    children: [
-                      _buildSignInTab(auth),
-                      _buildRegisterTab(auth),
-                    ],
-                  ),
-                ),
-              ],
->>>>>>> 304825e0e665734c4baba1dff3ff8d2dd2559630
             ),
           );
         },
@@ -296,7 +211,6 @@ class _LoginScreenState extends State<LoginScreen>
     );
   }
 
-<<<<<<< HEAD
   Widget _buildSignInForm(AuthProvider auth) {
     return Form(
       key: _signInFormKey,
@@ -629,138 +543,11 @@ class _LoginScreenState extends State<LoginScreen>
           filled: true,
           fillColor: Colors.transparent,
           contentPadding: const EdgeInsets.symmetric(vertical: 18),
-=======
-  // ── Sign In Tab ─────────────────────────────────────────────────────────────
-  Widget _buildSignInTab(AuthProvider auth) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-      child: Form(
-        key: _signInFormKey,
-        child: Column(
-          children: [
-            TextFormField(
-              controller: _signInEmailController,
-              keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(
-                labelText: 'Email',
-                prefixIcon: Icon(Icons.email_outlined),
-              ),
-              validator: (v) {
-                if (v == null || v.trim().isEmpty) return 'Please enter your email';
-                if (!v.contains('@')) return 'Enter a valid email';
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _signInPasswordController,
-              obscureText: !_signInPasswordVisible,
-              decoration: InputDecoration(
-                labelText: 'Password',
-                prefixIcon: const Icon(Icons.lock_outline),
-                suffixIcon: IconButton(
-                  icon: Icon(_signInPasswordVisible
-                      ? Icons.visibility_off
-                      : Icons.visibility),
-                  onPressed: () => setState(
-                      () => _signInPasswordVisible = !_signInPasswordVisible),
-                ),
-              ),
-              validator: (v) {
-                if (v == null || v.isEmpty) return 'Please enter your password';
-                return null;
-              },
-            ),
-            const SizedBox(height: 8),
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton(
-                onPressed: () => _onForgotPassword(auth),
-                child: const Text('Forgot Password?'),
-              ),
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: auth.isLoading ? null : () => _onSignIn(auth),
-                child: auth.isLoading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                            color: Colors.white, strokeWidth: 2),
-                      )
-                    : const Text('Sign In'),
-              ),
-            ),
- 
-            // ── Fingerprint login button ──
-            // Shown only when the user has previously saved credentials
-            if (_biometricAvailable && _biometricEnabled) ...[
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  const Expanded(child: Divider()),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: Text('or',
-                        style: Theme.of(context)
-                            .textTheme
-                            .bodySmall
-                            ?.copyWith(color: AppColors.textSecondary)),
-                  ),
-                  const Expanded(child: Divider()),
-                ],
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed:
-                      auth.isLoading ? null : () => _onFingerprintLogin(auth),
-                  icon: const Icon(Icons.fingerprint, size: 22),
-                  label: const Text('Login with Fingerprint'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.primary,
-                    side: const BorderSide(color: AppColors.primary),
-                    minimumSize: const Size(double.infinity, 48),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                  ),
-                ),
-              ),
-            ],
- 
-            // ── Fingerprint available but not yet set up ──
-            // Subtle hint so users know it's possible
-            if (_biometricAvailable && !_biometricEnabled) ...[
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.fingerprint,
-                      size: 16, color: AppColors.textSecondary),
-                  const SizedBox(width: 6),
-                  Text(
-                    'Sign in to set up fingerprint login',
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodySmall
-                        ?.copyWith(color: AppColors.textSecondary),
-                  ),
-                ],
-              ),
-            ],
-            _buildErrorBox(auth),
-          ],
->>>>>>> 304825e0e665734c4baba1dff3ff8d2dd2559630
         ),
       ),
     );
   }
 
-<<<<<<< HEAD
   Widget _buildPrimaryButton({
     required String text,
     required bool isLoading,
@@ -821,85 +608,6 @@ class _LoginScreenState extends State<LoginScreen>
           ),
         );
       }
-=======
-  // ── Register Tab ────────────────────────────────────────────────────────────
-  Widget _buildRegisterTab(AuthProvider auth) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-      child: Form(
-        key: _registerFormKey,
-        child: Column(
-          children: [
-            TextFormField(
-              controller: _registerEmailController,
-              keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(
-                labelText: 'Email',
-                prefixIcon: Icon(Icons.email_outlined),
-              ),
-              validator: (v) {
-                if (v == null || v.trim().isEmpty) return 'Please enter your email';
-                if (!v.contains('@')) return 'Enter a valid email';
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _registerPasswordController,
-              obscureText: !_registerPasswordVisible,
-              decoration: InputDecoration(
-                labelText: 'Password',
-                prefixIcon: const Icon(Icons.lock_outline),
-                hintText: 'At least 6 characters',
-                suffixIcon: IconButton(
-                  icon: Icon(_registerPasswordVisible
-                      ? Icons.visibility_off
-                      : Icons.visibility),
-                  onPressed: () => setState(() =>
-                      _registerPasswordVisible = !_registerPasswordVisible),
-                ),
-              ),
-              validator: (v) {
-                if (v == null || v.isEmpty) return 'Please enter a password';
-                if (v.length < 6) return 'Password must be at least 6 characters';
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _registerConfirmController,
-              obscureText: true,
-              decoration: const InputDecoration(
-                labelText: 'Confirm Password',
-                prefixIcon: Icon(Icons.lock_outline),
-              ),
-              validator: (v) {
-                if (v != _registerPasswordController.text) {
-                  return 'Passwords do not match';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: auth.isLoading ? null : () => _onRegister(auth),
-                child: auth.isLoading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                            color: Colors.white, strokeWidth: 2),
-                      )
-                    : const Text('Create Account'),
-              ),
-            ),
-            _buildErrorBox(auth),
-          ],
-        ),
-      ),
->>>>>>> 304825e0e665734c4baba1dff3ff8d2dd2559630
     );
   }
 
@@ -908,7 +616,6 @@ class _LoginScreenState extends State<LoginScreen>
       return const SizedBox.shrink();
     }
     return Container(
-<<<<<<< HEAD
       margin: const EdgeInsets.only(top: 24),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -919,33 +626,17 @@ class _LoginScreenState extends State<LoginScreen>
       child: Row(
         children: [
           const Icon(Icons.error_outline, color: AppColors.error, size: 20),
-=======
-      margin: const EdgeInsets.only(top: 16),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.error.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.error_outline, color: AppColors.error),
->>>>>>> 304825e0e665734c4baba1dff3ff8d2dd2559630
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               auth.errorMessage!,
-<<<<<<< HEAD
               style: const TextStyle(color: AppColors.error, fontSize: 13, fontWeight: FontWeight.w500),
-=======
-              style: const TextStyle(color: AppColors.error),
->>>>>>> 304825e0e665734c4baba1dff3ff8d2dd2559630
             ),
           ),
         ],
       ),
     );
   }
-<<<<<<< HEAD
 }
 
 class _GeometricLogoPainter extends CustomPainter {
@@ -1010,6 +701,4 @@ class _GeometricLogoPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-=======
->>>>>>> 304825e0e665734c4baba1dff3ff8d2dd2559630
 }

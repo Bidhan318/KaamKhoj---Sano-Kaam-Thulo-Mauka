@@ -10,12 +10,9 @@ dependencies:
   flutter:
     sdk: flutter
 
-<<<<<<< HEAD
 
   google_fonts: ^6.2.1
 
-=======
->>>>>>> 304825e0e665734c4baba1dff3ff8d2dd2559630
   # Firebase
   firebase_core: ^4.0.0
   firebase_auth: ^6.0.0

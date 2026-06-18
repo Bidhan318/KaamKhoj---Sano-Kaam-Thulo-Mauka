@@ -69,17 +69,8 @@ class WorkerModel {
       'address': address,
     };
   }
-<<<<<<< HEAD
-  WorkerModel copyWith({
-    String? name,
-    String? phone,
-    String? profileImage,
-    List<String>? skills,
-    double? ratePerDay,
-=======
 
   WorkerModel copyWith({
->>>>>>> 304825e0e665734c4baba1dff3ff8d2dd2559630
     bool? isAvailable,
     double? latitude,
     double? longitude,
@@ -87,18 +78,6 @@ class WorkerModel {
     double? distanceFromClient,
     double? rating,
     int? totalReviews,
-<<<<<<< HEAD
-    bool clearProfileImage = false,
-  }) {
-    return WorkerModel(
-      uid: uid,
-      name: name ?? this.name,
-      phone: phone ?? this.phone,
-      profileImage:
-      clearProfileImage ? null : (profileImage ?? this.profileImage),
-      skills: skills ?? this.skills,
-      ratePerDay: ratePerDay ?? this.ratePerDay,
-=======
   }) {
     return WorkerModel(
       uid: uid,
@@ -107,22 +86,13 @@ class WorkerModel {
       profileImage: profileImage,
       skills: skills,
       ratePerDay: ratePerDay,
->>>>>>> 304825e0e665734c4baba1dff3ff8d2dd2559630
       rating: rating ?? this.rating,
       totalReviews: totalReviews ?? this.totalReviews,
       isAvailable: isAvailable ?? this.isAvailable,
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
       address: address ?? this.address,
-<<<<<<< HEAD
-      distanceFromClient:
-      distanceFromClient ?? this.distanceFromClient,
-    );
-  }
-
-=======
       distanceFromClient: distanceFromClient ?? this.distanceFromClient,
     );
   }
->>>>>>> 304825e0e665734c4baba1dff3ff8d2dd2559630
 }

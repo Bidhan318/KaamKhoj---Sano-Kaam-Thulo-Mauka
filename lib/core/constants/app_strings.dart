@@ -13,7 +13,6 @@ class AppStrings {
 
   // Auth
   static const String login = 'Login';
-<<<<<<< HEAD
   static const String signIn = 'Sign In';
   static const String register = 'Register';
   static const String createAccount = 'Create Account';
@@ -24,24 +23,16 @@ class AppStrings {
   static const String orSignInWith = 'Or sign in with';
   static const String loginWithFingerprint = 'Login with Fingerprint';
   static const String setupFingerprint = 'Sign in to set up fingerprint login';
-=======
-  static const String register = 'Register';
->>>>>>> 304825e0e665734c4baba1dff3ff8d2dd2559630
   static const String phone = 'Phone Number';
   static const String otpVerification = 'OTP Verification';
   static const String enterOtp = 'Enter the OTP sent to your phone';
   static const String name = 'Full Name';
   static const String email = 'Email (optional)';
-<<<<<<< HEAD
   static const String emailRequired = 'Email';
   static const String password = 'Password';
   static const String confirmPassword = 'Confirm Password';
   static const String alreadyHaveAccount = 'Already have an account? ';
   static const String dontHaveAccount = "Don't have an account? ";
-=======
-  static const String alreadyHaveAccount = 'Already have an account? Login';
-  static const String dontHaveAccount = "Don't have an account? Register";
->>>>>>> 304825e0e665734c4baba1dff3ff8d2dd2559630
   static const String selectRole = 'I am a...';
   static const String client = 'Client';
   static const String worker = 'Worker';
