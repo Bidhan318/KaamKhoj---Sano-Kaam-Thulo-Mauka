@@ -298,8 +298,9 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
 
           // ── Floating Search Bar ──────────────────────────────────────────
-          Positioned(
-            top: MediaQuery.of(context).padding.top + 100,
+          if (!isWorker)
+            Positioned(
+              top: MediaQuery.of(context).padding.top + 100,
             left: 24,
             right: 24,
             child: Container(

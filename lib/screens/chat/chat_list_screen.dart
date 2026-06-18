@@ -1,25 +1,4 @@
-// lib/screens/chat/chat_list_screen.dart
-//
-// PURPOSE: Messenger-style inbox showing all conversations for the current user.
-// Reads from /chats where participants arrayContains currentUserUid.
-// Tapping a conversation opens the existing ChatScreen.
-//
-// HOW TO ADD TO HOME DRAWER (home_screen.dart):
-// Add this ListTile inside _buildDrawer(), before the Divider:
-//
-//   ListTile(
-//     leading: const Icon(Icons.chat_outlined),
-//     title: const Text('Messages'),
-//     onTap: () {
-//       Navigator.pop(context);
-//       Navigator.push(context,
-//         MaterialPageRoute(builder: (_) => const ChatListScreen()));
-//     },
-//   ),
-//
-// REQUIRED 1-LINE EDIT in chat_service.dart → sendMessage() batch.set:
-//   'participantNames': {senderUid: senderName, receiverUid: receiverName},
-// Pass senderName when calling sendMessage() so names are stored alongside UIDs.
+
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';

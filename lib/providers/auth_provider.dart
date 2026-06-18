@@ -61,9 +61,10 @@ class AuthProvider extends ChangeNotifier {
     // Check if we should show the fingerprint lock gate
     final biometricAvailable = await _biometricService.isBiometricAvailable();
     final biometricEnabled = await _biometricService.isBiometricEnabled();
+    final savedCredentials = await _biometricService.getSavedCredentials();
  
-    if (biometricAvailable && biometricEnabled) {
-      // Device has biometrics set up → require fingerprint before HomeScreen
+    if (biometricAvailable && biometricEnabled && savedCredentials?.email == currentUser.email) {
+      // Device has biometrics set up for this user → require fingerprint before HomeScreen
       _status = AuthStatus.requiresBiometricUnlock;
     } else {
       _status = AuthStatus.authenticated;
