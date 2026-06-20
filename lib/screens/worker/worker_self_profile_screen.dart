@@ -4,12 +4,14 @@
 // AND edit/save their profile. Two tabs: Preview (client view) + Edit Profile.
 // Only shown to users with role='worker'.
 
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/utils/profile_image_helper.dart';
 import '../../models/worker_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/worker_provider.dart';
@@ -219,8 +221,12 @@ super.dispose();
 
 Future<void> _pickImage() async {
 final picker = ImagePicker();
-final picked =
-await picker.pickImage(source: ImageSource.gallery, imageQuality: 75);
+final picked = await picker.pickImage(
+  source: ImageSource.gallery,
+  maxWidth: 400,
+  maxHeight: 400,
+  imageQuality: 70,
+);
 if (picked != null) {
 setState(() {
 _pickedImage = File(picked.path);
@@ -260,9 +266,16 @@ final workerProvider = context.read<WorkerProvider>();
 String? imageUrl = _imageRemoved ? null : _currentImageUrl;
 
 try {
-// Upload new image if picked
-
-
+// Convert the picked image to a base64 string and save it straight into the Firestore document
+if (_pickedImage != null && !_imageRemoved) {
+  final bytes = await _pickedImage!.readAsBytes();
+  if (bytes.length > 700 * 1024) {
+    throw Exception(
+        'Photo is too large (${(bytes.length / 1024).round()} KB). '
+        'Please choose a smaller/simpler photo.');
+  }
+  imageUrl = base64Encode(bytes);
+}
 final updated = WorkerModel(
   uid: widget.worker.uid,
   name: _nameCon.text.trim(),
@@ -318,28 +331,15 @@ const SizedBox(height: 24),
 _sectionTitle('Basic Info'),
 const SizedBox(height: 12),
 TextFormField(
-controller: _nameCon,
-decoration: const InputDecoration(
-labelText: 'Full Name',
-prefixIcon: Icon(Icons.person_outline),
-),
-textCapitalization: TextCapitalization.words,
-validator: (v) =>
-(v == null || v.trim().isEmpty) ? 'Name is required' : null,
-),
-const SizedBox(height: 14),
-const SizedBox(height: 14),
-TextFormField(
-controller: _phoneCon,
-decoration: const InputDecoration(
-labelText: 'Phone Number',
-prefixIcon: Icon(Icons.phone_outlined),
-hintText: 'e.g. 98XXXXXXXX',
-),
-keyboardType: TextInputType.phone,
-inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-validator: (v) =>
-(v == null || v.trim().isEmpty) ? 'Phone is required' : null,
+  controller: _phoneCon,
+  decoration: const InputDecoration(
+    labelText: 'Email',
+    prefixIcon: Icon(Icons.email_outlined),
+    hintText: 'e.g. name@example.com',
+  ),
+  keyboardType: TextInputType.emailAddress,
+  validator: (v) =>
+      (v == null || v.trim().isEmpty) ? 'Email is required' : null,
 ),
 const SizedBox(height: 14),
 TextFormField(
@@ -415,9 +415,9 @@ image: _pickedImage != null
 image: FileImage(_pickedImage!),
 fit: BoxFit.cover,
 )
-    : (_currentImageUrl != null
+   : (_currentImageUrl != null
 ? DecorationImage(
-image: NetworkImage(_currentImageUrl!),
+image: profileImageProvider(_currentImageUrl)!,
 fit: BoxFit.cover,
 )
     : null),

@@ -4,6 +4,7 @@
 // Replaces the old Google Maps BitmapDescriptor approach.
 
 import 'package:flutter/material.dart';
+import '../core/utils/profile_image_helper.dart';
 
 class MapMarkerHelper {
   MapMarkerHelper._();
@@ -56,6 +57,32 @@ class MapMarkerHelper {
             color: textColor,
             fontSize: size * 0.45,
             fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Returns a circular image marker.
+  static Widget imageMarker({
+    required String imageUrl,
+    double size = 40,
+    VoidCallback? onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.white, width: 2),
+          boxShadow: const [
+            BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 2)),
+          ],
+          image: DecorationImage(
+            image: profileImageProvider(imageUrl) ?? NetworkImage(imageUrl),
+            fit: BoxFit.cover,
           ),
         ),
       ),

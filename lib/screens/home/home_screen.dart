@@ -21,6 +21,7 @@ import '../../core/services/biometric_service.dart';
 import '../chat/chat_list_screen.dart';
 import '../worker/worker_profile_screen.dart';
 import '../worker/worker_self_profile_screen.dart';
+import '../../core/utils/profile_image_helper.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -93,7 +94,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   color: Colors.white,
                   image: worker.profileImage != null
                       ? DecorationImage(
-                          image: NetworkImage(worker.profileImage!),
+                          image: profileImageProvider(worker.profileImage!)!,
                           fit: BoxFit.cover,
                         )
                       : null,
@@ -534,10 +535,15 @@ class _HomeScreenState extends State<HomeScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                const CircleAvatar(
+                CircleAvatar(
                   radius: 28,
                   backgroundColor: AppColors.textLight,
-                  child: Icon(Icons.person, size: 32, color: AppColors.primary),
+                  backgroundImage: auth.user?.profileImage != null
+                      ? profileImageProvider(auth.user!.profileImage!)!
+                      : null,
+                  child: auth.user?.profileImage == null
+                      ? const Icon(Icons.person, size: 32, color: AppColors.primary)
+                      : null,
                 ),
                 const SizedBox(height: 8),
                 Text(

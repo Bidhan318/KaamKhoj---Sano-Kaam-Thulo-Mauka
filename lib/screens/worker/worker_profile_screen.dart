@@ -6,6 +6,7 @@ import '../../core/constants/app_strings.dart';
 import '../../core/utils/distance_calculator.dart';
 import '../../models/worker_model.dart';
 import '../chat/chat_screen.dart';
+import '../../core/utils/profile_image_helper.dart';
 
 class WorkerProfileScreen extends StatelessWidget {
   final WorkerModel worker;
@@ -86,7 +87,7 @@ class WorkerProfileScreen extends StatelessWidget {
                         ],
                         image: worker.profileImage != null
                             ? DecorationImage(
-                          image: NetworkImage(worker.profileImage!),
+                          image: profileImageProvider(worker.profileImage!)!,
                           fit: BoxFit.cover,
                         )
                             : null,
