@@ -109,6 +109,16 @@ class WorkerProvider extends ChangeNotifier {
         .collection('workers')
         .doc(profile.uid)
         .set(profile.toMap(), SetOptions(merge: true));
+
+    // Sync profileImage and name to UserModel
+    await _firestore
+        .collection('users')
+        .doc(profile.uid)
+        .set({
+          'profileImage': profile.profileImage,
+          'name': profile.name,
+        }, SetOptions(merge: true));
+
     _myWorkerProfile = profile;
     notifyListeners();
   }

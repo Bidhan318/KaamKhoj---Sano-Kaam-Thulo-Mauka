@@ -59,4 +59,21 @@ class ImageUploadService {
       return null;
     }
   }
+
+  /// Uploads a pre-picked File to Firebase Storage.
+  Future<String?> uploadProfileImage(File file, String userId) async {
+    try {
+      final Reference ref = _storage.ref().child('profile_images').child('$userId.jpg');
+      final SettableMetadata metadata = SettableMetadata(contentType: 'image/jpeg');
+      final UploadTask uploadTask = ref.putFile(file, metadata);
+      final TaskSnapshot snapshot = await uploadTask;
+      return await snapshot.ref.getDownloadURL();
+    } on FirebaseException catch (e) {
+      debugPrint('Firebase Storage Error during upload: ${e.code} - ${e.message}');
+      return null;
+    } catch (e) {
+      debugPrint('General Error during image upload: $e');
+      return null;
+    }
+  }
 }

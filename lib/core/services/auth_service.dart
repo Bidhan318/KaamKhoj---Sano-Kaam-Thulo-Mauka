@@ -70,7 +70,7 @@ class AuthService {
     final workerData = WorkerModel(
       uid: uid,
       name: name,
-      phone: email, // using email as identifier since we switched from phone
+      phone: email, // using email as identifier 
       skills: [skill],
       ratePerDay: ratePerDay,
       latitude: 0.0,  // will be updated when worker opens the app

@@ -4,6 +4,7 @@ import '../core/constants/app_colors.dart';
 import '../core/utils/distance_calculator.dart';
 import '../models/worker_model.dart';
 import '../screens/worker/worker_profile_screen.dart';
+import '../core/utils/profile_image_helper.dart';
 
 class WorkerCard extends StatelessWidget {
   final WorkerModel worker;
@@ -89,7 +90,7 @@ class WorkerCard extends StatelessWidget {
                       radius: 32,
                       backgroundColor: Colors.grey.shade100,
                       backgroundImage: worker.profileImage != null
-                          ? NetworkImage(worker.profileImage!)
+                          ? profileImageProvider(worker.profileImage!)!
                           : null,
                       child: worker.profileImage == null
                           ? Text(

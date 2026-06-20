@@ -7,6 +7,7 @@ import '../models/worker_model.dart';
 import '../core/utils/distance_calculator.dart';
 import '../screens/chat/chat_screen.dart';
 import '../screens/worker/worker_profile_screen.dart';
+import '../core/utils/profile_image_helper.dart';
 
 class BottomSheetWorker extends StatelessWidget {
   final WorkerModel worker;
@@ -58,7 +59,7 @@ class BottomSheetWorker extends StatelessWidget {
                     radius: 32,
                     backgroundColor: AppColors.primary.withValues(alpha: 0.1),
                     backgroundImage: worker.profileImage != null
-                        ? NetworkImage(worker.profileImage!)
+                        ? profileImageProvider(worker.profileImage!)!
                         : null,
                     child: worker.profileImage == null
                         ? Text(

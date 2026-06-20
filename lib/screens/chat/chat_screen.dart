@@ -6,6 +6,7 @@ import '../../core/constants/app_strings.dart';
 import '../../core/services/chat_service.dart';
 import '../../models/worker_model.dart';
 import '../../providers/auth_provider.dart';
+import '../../core/utils/profile_image_helper.dart';
 
 class ChatScreen extends StatefulWidget {
   // Works for BOTH directions:
@@ -99,7 +100,7 @@ class _ChatScreenState extends State<ChatScreen> {
               radius: 18,
               backgroundColor: AppColors.primary.withValues(alpha: 0.15),
               backgroundImage: widget.worker?.profileImage != null
-                  ? NetworkImage(widget.worker!.profileImage!)
+                  ? profileImageProvider(widget.worker!.profileImage!)
                   : null,
               child: widget.worker?.profileImage == null
                   ? Text(_otherAvatarLetter,
