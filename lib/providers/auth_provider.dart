@@ -73,6 +73,21 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // ─── Cancel Registration ────────────────────────────────────────────────────
+  /// Deletes the half-created Firebase Auth user and returns to login.
+  /// Called when user taps Back on the profile-creation screen.
+  Future<void> cancelRegistration() async {
+    try {
+      await _authService.currentUser?.delete();
+    } catch (_) {
+      // If delete fails (e.g. requires re-auth), just sign out instead
+      await _authService.signOut();
+    }
+    _user = null;
+    _status = AuthStatus.unauthenticated;
+    notifyListeners();
+  }
+
   // ─── Sign In ───────────────────────────────────────────────────────────────
   Future<void> signIn({
     required String email,
