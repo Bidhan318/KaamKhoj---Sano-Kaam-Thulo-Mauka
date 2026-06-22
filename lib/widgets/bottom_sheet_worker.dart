@@ -55,22 +55,44 @@ class BottomSheetWorker extends StatelessWidget {
               // ── Worker header ──
               Row(
                 children: [
-                  CircleAvatar(
-                    radius: 32,
-                    backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-                    backgroundImage: worker.profileImage != null
-                        ? profileImageProvider(worker.profileImage!)!
-                        : null,
-                    child: worker.profileImage == null
-                        ? Text(
-                      worker.name[0].toUpperCase(),
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
+                  // Avatar with a colored ring (green = available, red = unavailable)
+                  // matching the status ring used on the Worker Card / Profile screen.
+                  Container(
+                    padding: const EdgeInsets.all(3),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: LinearGradient(
+                        colors: worker.isAvailable
+                            ? [Colors.green.shade400, Colors.green.shade700]
+                            : [Colors.red.shade400, Colors.red.shade700],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
                       ),
-                    )
-                        : null,
+                    ),
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                      ),
+                      child: CircleAvatar(
+                        radius: 30,
+                        backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                        backgroundImage: worker.profileImage != null
+                            ? profileImageProvider(worker.profileImage!)!
+                            : null,
+                        child: worker.profileImage == null
+                            ? Text(
+                          worker.name[0].toUpperCase(),
+                          style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primary,
+                          ),
+                        )
+                            : null,
+                      ),
+                    ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -133,7 +155,8 @@ class BottomSheetWorker extends StatelessWidget {
               const Divider(),
               const SizedBox(height: 12),
 
-              // ── Info row: Distance | Rate ──
+              // ── Info row: Distance | Rate — tinted boxes, matching the
+              // Rate/Distance/Jobs cards on the full Worker Profile screen ──
               Row(
                 children: [
                   _InfoChip(
@@ -142,64 +165,134 @@ class BottomSheetWorker extends StatelessWidget {
                         ? DistanceCalculator.formatDistance(
                         worker.distanceFromClient!)
                         : worker.address,
+                    tint: AppColors.skillPalette[3], // blue
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 10),
                   _InfoChip(
                     icon: Icons.payments_outlined,
                     label: 'NPR ${worker.ratePerDay.toInt()}/day',
+                    tint: AppColors.skillPalette[0], // purple
                   ),
                 ],
               ),
 
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
 
-              // ── Skills ──
+              // ── Skills — multi-colored pills, same palette as everywhere else ──
               if (worker.skills.isNotEmpty) ...[
                 Align(
                   alignment: Alignment.centerLeft,
                   child: Wrap(
                     spacing: 8,
-                    runSpacing: 4,
-                    children: worker.skills
-                        .map((skill) => Chip(label: Text(skill)))
-                        .toList(),
+                    runSpacing: 8,
+                    children: List.generate(worker.skills.length, (i) {
+                      final color =
+                      AppColors.skillPalette[i % AppColors.skillPalette.length];
+                      return Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 7),
+                        decoration: BoxDecoration(
+                          color: color.withValues(alpha: 0.10),
+                          border: Border.all(color: color.withValues(alpha: 0.45)),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          worker.skills[i],
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: color,
+                          ),
+                        ),
+                      );
+                    }),
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 20),
               ],
 
-              // ── Action buttons ──
+              // ── Action buttons — same pill shapes as Worker Profile screen ──
               Row(
                 children: [
                   Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => ChatScreen(worker: worker),
+                    child: Material(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(30),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(30),
+                        onTap: () {
+                          Navigator.pop(context);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => ChatScreen(worker: worker),
+                            ),
+                          );
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(30),
+                            border: Border.all(color: AppColors.divider),
                           ),
-                        );
-                      },
-                      icon: const Icon(Icons.chat_bubble_outline),
-                      label: const Text(AppStrings.message),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: const [
+                              Icon(Icons.chat_bubble_outline,
+                                  size: 18, color: AppColors.textPrimary),
+                              SizedBox(width: 8),
+                              Text(
+                                AppStrings.message,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => WorkerProfileScreen(worker: worker),
+                    child: Material(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(30),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(30),
+                        onTap: () {
+                          Navigator.pop(context);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => WorkerProfileScreen(worker: worker),
+                            ),
+                          );
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          decoration: BoxDecoration(
+                            gradient: AppColors.primaryGradient,
+                            borderRadius: BorderRadius.circular(30),
                           ),
-                        );
-                      },
-                      icon: const Icon(Icons.handshake_outlined),
-                      label: const Text(AppStrings.hireNow),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: const [
+                              Icon(Icons.handshake_outlined,
+                                  size: 18, color: Colors.white),
+                              SizedBox(width: 8),
+                              Text(
+                                AppStrings.hireNow,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ],
@@ -215,22 +308,38 @@ class BottomSheetWorker extends StatelessWidget {
 class _InfoChip extends StatelessWidget {
   final IconData icon;
   final String label;
+  final Color tint;
 
-  const _InfoChip({required this.icon, required this.label});
+  const _InfoChip({required this.icon, required this.label, required this.tint});
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 16, color: AppColors.textSecondary),
-        const SizedBox(width: 4),
-        Text(
-          label,
-          style: const TextStyle(
-              color: AppColors.textSecondary, fontSize: 13),
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+        decoration: BoxDecoration(
+          color: tint.withValues(alpha: 0.10),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: tint.withValues(alpha: 0.25)),
         ),
-      ],
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 16, color: tint),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                label,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
