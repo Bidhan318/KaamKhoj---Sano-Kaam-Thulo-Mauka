@@ -36,4 +36,16 @@ class AppColors {
   static const Color divider         = Color(0xFFE2E6F0); // Cool-tinted divider
   static const Color mapMarkerClient = Color(0xFF3F51B5); // Indigo pin
   static const Color mapMarkerWorker = Color(0xFF009688); // Teal pin
+
+  // --- Skill Pill Palette ---
+  // Used to give each skill chip (Electrician, Plumber, Wiring, etc.) a distinct
+  // color, matching the new Worker Profile / Worker Card theme. Cycle through
+  // this list with `skillPalette[index % skillPalette.length]`.
+  static const List<Color> skillPalette = [
+    Color(0xFF5E35B1), // purple
+    Color(0xFF00897B), // teal
+    Color(0xFFF9A825), // amber
+    Color(0xFF1E88E5), // blue
+    Color(0xFFE53935), // red
+  ];
 }
