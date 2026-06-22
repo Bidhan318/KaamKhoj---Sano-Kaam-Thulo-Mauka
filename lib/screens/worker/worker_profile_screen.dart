@@ -43,16 +43,16 @@ class WorkerProfileScreen extends StatelessWidget {
                 _buildStatsRow(),
                 const SizedBox(height: 20),
                 if (worker.address.isNotEmpty) ...[
-                  _sectionTitle('Location'),
+                  _sectionTitle('Location', Icons.location_on_outlined),
                   const SizedBox(height: 8),
                   _buildLocationCard(),
                   const SizedBox(height: 20),
                 ],
-                _sectionTitle('Skills'),
+                _sectionTitle('Skills', Icons.construction_outlined),
                 const SizedBox(height: 10),
                 _buildSkills(),
                 const SizedBox(height: 20),
-                _sectionTitle('Ratings Breakdown'),
+                _sectionTitle('Ratings Breakdown', Icons.bar_chart_rounded),
                 const SizedBox(height: 8),
                 _buildRatingsBreakdown(),
                 // Extra space so the last card clears the pinned button bar
@@ -71,14 +71,21 @@ class WorkerProfileScreen extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
         decoration: BoxDecoration(
-          color: AppColors.background,
+          color: AppColors.surface,
           border: Border(
             top: BorderSide(color: AppColors.divider, width: 0.8),
           ),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primary.withValues(alpha: 0.06),
+              blurRadius: 12,
+              offset: const Offset(0, -4),
+            ),
+          ],
         ),
         child: Row(
           children: [
-            // Message — white pill, outlined
+            // Message — white pill, outlined with gradient border
             Expanded(
               child: Material(
                 color: Colors.white,
@@ -95,19 +102,21 @@ class WorkerProfileScreen extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(30),
-                      border: Border.all(color: AppColors.divider),
+                      border: Border.all(
+                        color: AppColors.primary.withValues(alpha: 0.3),
+                      ),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: const [
                         Icon(Icons.chat_bubble_outline,
-                            size: 18, color: AppColors.textPrimary),
+                            size: 18, color: AppColors.primary),
                         SizedBox(width: 8),
                         Text(
                           AppStrings.message,
                           style: TextStyle(
                             fontWeight: FontWeight.w600,
-                            color: AppColors.textPrimary,
+                            color: AppColors.primary,
                           ),
                         ),
                       ],
@@ -140,6 +149,16 @@ class WorkerProfileScreen extends StatelessWidget {
                       color:
                       worker.isAvailable ? null : AppColors.divider,
                       borderRadius: BorderRadius.circular(30),
+                      boxShadow: worker.isAvailable
+                          ? [
+                        BoxShadow(
+                          color:
+                          AppColors.primary.withValues(alpha: 0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
+                        ),
+                      ]
+                          : null,
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -174,66 +193,80 @@ class WorkerProfileScreen extends StatelessWidget {
   }
 
   // ── Photo banner header ────────────────────────────────────────────────────
+  // Reduced from 260 → 180 to prevent base64 images from being stretched/blurred
   Widget _buildPhotoBanner(BuildContext context) {
+    final imageProvider = worker.profileImage != null
+        ? profileImageProvider(worker.profileImage!)
+        : null;
+
     return Stack(
       children: [
+        // Gradient background (always visible, acts as fallback)
         Container(
-          height: 260,
+          height: 180,
           width: double.infinity,
-          decoration: BoxDecoration(
-            color: AppColors.primary.withValues(alpha: 0.08),
-            borderRadius: const BorderRadius.only(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF3F51B5), Color(0xFF009688)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.only(
               bottomLeft: Radius.circular(28),
               bottomRight: Radius.circular(28),
             ),
-            image: worker.profileImage != null
-                ? DecorationImage(
-              image: profileImageProvider(worker.profileImage!)!,
-              fit: BoxFit.cover,
-            )
-                : null,
           ),
-          child: worker.profileImage == null
-              ? Center(
-            child: Text(
-              worker.name.isNotEmpty
-                  ? worker.name[0].toUpperCase()
-                  : '?',
-              style: const TextStyle(
-                fontSize: 64,
-                fontWeight: FontWeight.w700,
-                color: AppColors.primary,
-              ),
-            ),
-          )
-              : null,
         ),
 
-        // Subtle bottom shadow
-        Positioned(
-          left: 0,
-          right: 0,
-          bottom: 0,
-          child: Container(
-            height: 64,
-            decoration: BoxDecoration(
-              borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(28),
-                bottomRight: Radius.circular(28),
-              ),
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.black.withValues(alpha: 0.0),
-                  Colors.black.withValues(alpha: 0.30),
+        // Profile image – constrained to a circle avatar instead of
+        // stretching across the full banner width. This keeps small
+        // base64 images sharp instead of blurry.
+        Positioned.fill(
+          child: Center(
+            child: Container(
+              width: 110,
+              height: 110,
+              margin: const EdgeInsets.only(top: 8),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withValues(alpha: 0.15),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.6),
+                  width: 3,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.18),
+                    blurRadius: 16,
+                    offset: const Offset(0, 4),
+                  ),
                 ],
+                image: imageProvider != null
+                    ? DecorationImage(
+                  image: imageProvider,
+                  fit: BoxFit.cover,
+                )
+                    : null,
               ),
+              child: imageProvider == null
+                  ? Center(
+                child: Text(
+                  worker.name.isNotEmpty
+                      ? worker.name[0].toUpperCase()
+                      : '?',
+                  style: const TextStyle(
+                    fontSize: 44,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+              )
+                  : null,
             ),
           ),
         ),
 
-        // Availability pill, bottom-right of the photo
+        // Availability pill, bottom-right of the banner
         Positioned(
           right: 20,
           bottom: 16,
@@ -287,7 +320,7 @@ class WorkerProfileScreen extends StatelessWidget {
             child: Container(
               margin: const EdgeInsets.only(top: 8),
               decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.28),
+                color: Colors.white.withValues(alpha: 0.20),
                 shape: BoxShape.circle,
               ),
               child: IconButton(
@@ -302,31 +335,38 @@ class WorkerProfileScreen extends StatelessWidget {
   }
 
   Widget _buildRatingRow() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Row(
-          children: List.generate(5, (i) {
-            return Icon(
-              i < worker.rating.round() ? Icons.star : Icons.star_border,
-              size: 18,
-              color: AppColors.accent,
-            );
-          }),
-        ),
-        const SizedBox(width: 6),
-        Text(
-          worker.rating.toStringAsFixed(1),
-          style: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary),
-        ),
-        Text(
-          ' / 5.0 · ${worker.totalReviews} reviews',
-          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-        ),
-      ],
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppColors.accent.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: List.generate(5, (i) {
+              return Icon(
+                i < worker.rating.round() ? Icons.star : Icons.star_border,
+                size: 18,
+                color: AppColors.accent,
+              );
+            }),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            worker.rating.toStringAsFixed(1),
+            style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary),
+          ),
+          Text(
+            ' / 5.0 · ${worker.totalReviews} reviews',
+            style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+          ),
+        ],
+      ),
     );
   }
 
@@ -364,13 +404,25 @@ class WorkerProfileScreen extends StatelessWidget {
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: AppColors.divider),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.08),
+              gradient: LinearGradient(
+                colors: [
+                  AppColors.primary.withValues(alpha: 0.12),
+                  AppColors.secondary.withValues(alpha: 0.12),
+                ],
+              ),
               shape: BoxShape.circle,
             ),
             child: const Icon(Icons.location_on,
@@ -425,37 +477,59 @@ class WorkerProfileScreen extends StatelessWidget {
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: AppColors.divider),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Column(
-            children: [
-              Text(
-                worker.rating.toStringAsFixed(1),
-                style: const TextStyle(
-                    fontSize: 38,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary),
+          // Left side — big rating number with gradient background
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppColors.accent.withValues(alpha: 0.10),
+                  AppColors.accent.withValues(alpha: 0.04),
+                ],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
               ),
-              Row(
-                children: List.generate(5, (i) {
-                  return Icon(
-                    i < worker.rating.round()
-                        ? Icons.star
-                        : Icons.star_border,
-                    size: 14,
-                    color: AppColors.accent,
-                  );
-                }),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                '${worker.totalReviews}',
-                style: const TextStyle(
-                    fontSize: 11, color: AppColors.textSecondary),
-              ),
-            ],
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              children: [
+                Text(
+                  worker.rating.toStringAsFixed(1),
+                  style: const TextStyle(
+                      fontSize: 38,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary),
+                ),
+                Row(
+                  children: List.generate(5, (i) {
+                    return Icon(
+                      i < worker.rating.round()
+                          ? Icons.star
+                          : Icons.star_border,
+                      size: 14,
+                      color: AppColors.accent,
+                    );
+                  }),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${worker.totalReviews}',
+                  style: const TextStyle(
+                      fontSize: 11, color: AppColors.textSecondary),
+                ),
+              ],
+            ),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -526,16 +600,21 @@ class WorkerProfileScreen extends StatelessWidget {
     };
   }
 
-  Widget _sectionTitle(String title) {
+  Widget _sectionTitle(String title, IconData icon) {
     return Row(
       children: [
         Container(
-          width: 3,
-          height: 16,
+          padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
-            color: AppColors.primary,
-            borderRadius: BorderRadius.circular(2),
+            gradient: LinearGradient(
+              colors: [
+                AppColors.primary.withValues(alpha: 0.12),
+                AppColors.secondary.withValues(alpha: 0.12),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(8),
           ),
+          child: Icon(icon, size: 14, color: AppColors.primary),
         ),
         const SizedBox(width: 8),
         Text(
@@ -544,6 +623,20 @@ class WorkerProfileScreen extends StatelessWidget {
               fontSize: 14,
               fontWeight: FontWeight.w600,
               color: AppColors.textPrimary),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Container(
+            height: 1,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppColors.primary.withValues(alpha: 0.2),
+                  AppColors.primary.withValues(alpha: 0.0),
+                ],
+              ),
+            ),
+          ),
         ),
       ],
     );
@@ -573,10 +666,24 @@ class _StatCard extends StatelessWidget {
           color: tint.withValues(alpha: 0.10),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: tint.withValues(alpha: 0.25)),
+          boxShadow: [
+            BoxShadow(
+              color: tint.withValues(alpha: 0.06),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Column(
           children: [
-            Icon(icon, size: 20, color: tint),
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: tint.withValues(alpha: 0.15),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, size: 18, color: tint),
+            ),
             const SizedBox(height: 6),
             Text(
               value,
