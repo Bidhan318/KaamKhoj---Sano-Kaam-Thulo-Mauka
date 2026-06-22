@@ -17,6 +17,9 @@ class WorkerProfileScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
+      // ── Pinned action buttons — same position in both the
+      // collapsed bottom-sheet and the expanded full-profile screen ──
+      bottomNavigationBar: _buildActionBar(context),
       body: CustomScrollView(
         slivers: [
           SliverToBoxAdapter(child: _buildPhotoBanner(context)),
@@ -52,8 +55,8 @@ class WorkerProfileScreen extends StatelessWidget {
                 _sectionTitle('Ratings Breakdown'),
                 const SizedBox(height: 8),
                 _buildRatingsBreakdown(),
-                const SizedBox(height: 24),
-                _buildActionButtons(context),
+                // Extra space so the last card clears the pinned button bar
+                const SizedBox(height: 16),
               ]),
             ),
           ),
@@ -62,7 +65,115 @@ class WorkerProfileScreen extends StatelessWidget {
     );
   }
 
-  // ── Photo banner header (replaces old gradient/wave header) ────────────
+  // ── Pinned bottom action bar ──────────────────────────────────────────────
+  Widget _buildActionBar(BuildContext context) {
+    return SafeArea(
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+        decoration: BoxDecoration(
+          color: AppColors.background,
+          border: Border(
+            top: BorderSide(color: AppColors.divider, width: 0.8),
+          ),
+        ),
+        child: Row(
+          children: [
+            // Message — white pill, outlined
+            Expanded(
+              child: Material(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(30),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(30),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ChatScreen(worker: worker),
+                    ),
+                  ),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(30),
+                      border: Border.all(color: AppColors.divider),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: const [
+                        Icon(Icons.chat_bubble_outline,
+                            size: 18, color: AppColors.textPrimary),
+                        SizedBox(width: 8),
+                        Text(
+                          AppStrings.message,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            // Hire Now — indigo-to-violet gradient pill
+            Expanded(
+              child: Material(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(30),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(30),
+                  onTap: worker.isAvailable
+                      ? () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                          content: Text('Hire flow coming soon!')),
+                    );
+                  }
+                      : null,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    decoration: BoxDecoration(
+                      gradient:
+                      worker.isAvailable ? AppColors.primaryGradient : null,
+                      color:
+                      worker.isAvailable ? null : AppColors.divider,
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.handshake_outlined,
+                          size: 18,
+                          color: worker.isAvailable
+                              ? Colors.white
+                              : AppColors.textSecondary,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          AppStrings.hireNow,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: worker.isAvailable
+                                ? Colors.white
+                                : AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Photo banner header ────────────────────────────────────────────────────
   Widget _buildPhotoBanner(BuildContext context) {
     return Stack(
       children: [
@@ -98,7 +209,7 @@ class WorkerProfileScreen extends StatelessWidget {
               : null,
         ),
 
-        // subtle bottom shadow so the photo blends into the page
+        // Subtle bottom shadow
         Positioned(
           left: 0,
           right: 0,
@@ -122,7 +233,7 @@ class WorkerProfileScreen extends StatelessWidget {
           ),
         ),
 
-        // availability pill, bottom-right of the photo
+        // Availability pill, bottom-right of the photo
         Positioned(
           right: 20,
           bottom: 16,
@@ -168,7 +279,7 @@ class WorkerProfileScreen extends StatelessWidget {
           ),
         ),
 
-        // back button
+        // Back button
         Positioned(
           top: 0,
           left: 8,
@@ -226,7 +337,7 @@ class WorkerProfileScreen extends StatelessWidget {
           icon: Icons.payments_outlined,
           value: 'NPR ${worker.ratePerDay.toInt()}/day',
           label: 'Rate',
-          tint: AppColors.skillPalette[0], // purple
+          tint: AppColors.skillPalette[0],
         ),
         if (worker.distanceFromClient != null)
           _StatCard(
@@ -234,13 +345,13 @@ class WorkerProfileScreen extends StatelessWidget {
             value: DistanceCalculator.formatDistance(
                 worker.distanceFromClient!),
             label: 'Distance',
-            tint: AppColors.skillPalette[3], // blue
+            tint: AppColors.skillPalette[3],
           ),
         _StatCard(
           icon: Icons.task_alt_outlined,
           value: worker.totalReviews.toString(),
           label: 'Jobs Done',
-          tint: AppColors.skillPalette[2], // amber/orange
+          tint: AppColors.skillPalette[2],
         ),
       ],
     );
@@ -262,7 +373,8 @@ class WorkerProfileScreen extends StatelessWidget {
               color: AppColors.primary.withValues(alpha: 0.08),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.location_on, color: AppColors.primary, size: 18),
+            child: const Icon(Icons.location_on,
+                color: AppColors.primary, size: 18),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -412,100 +524,6 @@ class WorkerProfileScreen extends StatelessWidget {
       2: two < 0 ? 0 : two,
       1: one < 0 ? 0 : one
     };
-  }
-
-  Widget _buildActionButtons(BuildContext context) {
-    return Row(
-      children: [
-        // Message — white pill, outlined
-        Expanded(
-          child: Material(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(30),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(30),
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => ChatScreen(worker: worker),
-                ),
-              ),
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(30),
-                  border: Border.all(color: AppColors.divider),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: const [
-                    Icon(Icons.chat_bubble_outline,
-                        size: 18, color: AppColors.textPrimary),
-                    SizedBox(width: 8),
-                    Text(
-                      AppStrings.message,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        // Hire Now — indigo-to-violet gradient pill
-        Expanded(
-          child: Material(
-            color: Colors.transparent,
-            borderRadius: BorderRadius.circular(30),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(30),
-              onTap: worker.isAvailable
-                  ? () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                      content: Text('Hire flow coming soon!')),
-                );
-              }
-                  : null,
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                decoration: BoxDecoration(
-                  gradient: worker.isAvailable ? AppColors.primaryGradient : null,
-                  color: worker.isAvailable ? null : AppColors.divider,
-                  borderRadius: BorderRadius.circular(30),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.handshake_outlined,
-                      size: 18,
-                      color: worker.isAvailable
-                          ? Colors.white
-                          : AppColors.textSecondary,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      AppStrings.hireNow,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        color: worker.isAvailable
-                            ? Colors.white
-                            : AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
   }
 
   Widget _sectionTitle(String title) {
