@@ -22,6 +22,30 @@ class AppColors {
   static const Color background = Color(0xFFF0F2F8); // Cool off-white with a blue tint
   static const Color surface    = Color(0xFFFFFFFF); // Card / sheet surface
 
+  // --- Background Gradient (for chat list / messaging screens) ---
+  static const LinearGradient backgroundGradient = LinearGradient(
+    colors: [
+      Color(0xFF9FA8DA), // medium indigo
+      Color(0xFFB3E5FC), // light sky blue bridge
+      Color(0xFF80CBC4), // medium teal
+    ],
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    stops: [0.0, 0.5, 1.0],
+  );
+
+  // --- Chat Area Gradient (for individual conversation background) ---
+  static const LinearGradient chatBackgroundGradient = LinearGradient(
+    colors: [
+      Color(0xFF9FA8DA), // medium indigo
+      Color(0xFFCE93D8), // soft purple accent
+      Color(0xFF80CBC4), // medium teal
+    ],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    stops: [0.0, 0.5, 1.0],
+  );
+
   // --- Text ---
   static const Color textPrimary   = Color(0xFF1A1F36); // Deep navy-charcoal
   static const Color textSecondary = Color(0xFF6B7280); // Muted grey

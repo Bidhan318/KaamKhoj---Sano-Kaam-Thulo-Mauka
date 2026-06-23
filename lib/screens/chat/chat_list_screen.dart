@@ -56,118 +56,162 @@ class ChatListScreen extends StatelessWidget {
     final myName = context.read<AuthProvider>().user!.name;
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: const Text('Messages'),
-        backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: false,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: AppColors.primaryGradient,
+          ),
+        ),
       ),
-      body: StreamBuilder<List<_ChatPreview>>(
-        stream: _chatsStream(myUid),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: AppColors.backgroundGradient,
+        ),
+        child: StreamBuilder<List<_ChatPreview>>(
+          stream: _chatsStream(myUid),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-          final chats = snapshot.data ?? [];
+            final chats = snapshot.data ?? [];
 
-          if (chats.isEmpty) {
-            return const Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.chat_bubble_outline,
-                      size: 56, color: AppColors.textSecondary),
-                  SizedBox(height: 12),
-                  Text('No conversations yet',
-                      style: TextStyle(
-                          fontSize: 16, color: AppColors.textSecondary)),
-                  SizedBox(height: 4),
-                  Text('Start chatting from a worker or job profile',
-                      style: TextStyle(
-                          fontSize: 13, color: AppColors.textSecondary)),
-                ],
-              ),
-            );
-          }
-
-          return ListView.separated(
-            itemCount: chats.length,
-            separatorBuilder: (_, __) =>
-            const Divider(height: 1, color: AppColors.divider),
-            itemBuilder: (context, i) {
-              final chat = chats[i];
-              final isMe = chat.lastSenderId == myUid;
-
-              return ListTile(
-                contentPadding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                leading: _Avatar(name: chat.otherName),
-                title: Text(
-                  chat.otherName,
-                  style: TextStyle(
-                    fontWeight: chat.hasUnread && !isMe
-                        ? FontWeight.bold
-                        : FontWeight.normal,
-                    fontSize: 15,
-                  ),
-                ),
-                subtitle: Text(
-                  isMe
-                      ? 'You: ${chat.lastMessage}'
-                      : chat.lastMessage,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: chat.hasUnread && !isMe
-                        ? AppColors.textPrimary
-                        : AppColors.textSecondary,
-                    fontWeight: chat.hasUnread && !isMe
-                        ? FontWeight.w500
-                        : FontWeight.normal,
-                  ),
-                ),
-                trailing: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.end,
+            if (chats.isEmpty) {
+              return const Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      _formatTime(chat.lastMessageTime),
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: chat.hasUnread && !isMe
-                            ? AppColors.primary
-                            : AppColors.textSecondary,
-                      ),
-                    ),
-                    if (chat.hasUnread && !isMe) ...[
-                      const SizedBox(height: 4),
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: const BoxDecoration(
-                          color: AppColors.primary,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                    ],
+                    Icon(Icons.chat_bubble_outline,
+                        size: 56, color: AppColors.textSecondary),
+                    SizedBox(height: 12),
+                    Text('No conversations yet',
+                        style: TextStyle(
+                            fontSize: 16, color: AppColors.textSecondary)),
+                    SizedBox(height: 4),
+                    Text('Start chatting from a worker or job profile',
+                        style: TextStyle(
+                            fontSize: 13, color: AppColors.textSecondary)),
                   ],
                 ),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => ChatScreen(
-                        otherUid: chat.otherUid,
-                        otherName: chat.otherName,
+              );
+            }
+
+            return ListView.builder(
+              padding: const EdgeInsets.all(12),
+              itemCount: chats.length,
+              itemBuilder: (context, i) {
+                final chat = chats[i];
+                final isMe = chat.lastSenderId == myUid;
+
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Material(
+                    color: AppColors.surface,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      side: const BorderSide(color: AppColors.divider, width: 1),
+                    ),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(16),
+                      hoverColor: AppColors.primary.withValues(alpha: 0.15),
+                      highlightColor: AppColors.primary.withValues(alpha: 0.1),
+                      splashColor: AppColors.primary.withValues(alpha: 0.2),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => ChatScreen(
+                              otherUid: chat.otherUid,
+                              otherName: chat.otherName,
+                            ),
+                          ),
+                        );
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                        child: Row(
+                          children: [
+                            _Avatar(name: chat.otherName),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    chat.otherName,
+                                    style: TextStyle(
+                                      fontWeight: chat.hasUnread && !isMe
+                                          ? FontWeight.bold
+                                          : FontWeight.w600,
+                                      fontSize: 16,
+                                      color: AppColors.textPrimary,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    isMe
+                                        ? 'You: ${chat.lastMessage}'
+                                        : chat.lastMessage,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: chat.hasUnread && !isMe
+                                          ? AppColors.textPrimary
+                                          : AppColors.textSecondary,
+                                      fontWeight: chat.hasUnread && !isMe
+                                          ? FontWeight.w500
+                                          : FontWeight.normal,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text(
+                                  _formatTime(chat.lastMessageTime),
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: chat.hasUnread && !isMe
+                                        ? AppColors.primary
+                                        : AppColors.textSecondary,
+                                    fontWeight: chat.hasUnread && !isMe
+                                        ? FontWeight.w600
+                                        : FontWeight.normal,
+                                  ),
+                                ),
+                                if (chat.hasUnread && !isMe) ...[
+                                  const SizedBox(height: 8),
+                                  Container(
+                                    width: 10,
+                                    height: 10,
+                                    decoration: const BoxDecoration(
+                                      color: AppColors.primary,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  );
-                },
-              );
-            },
-          );
-        },
+                  ),
+                );
+              },
+            );
+          },
+        ),
       ),
     );
   }
@@ -180,6 +224,7 @@ class _Avatar extends StatelessWidget {
   const _Avatar({required this.name});
 
   Color _bgColor() {
+    if (name.trim().isEmpty) return const Color(0xFFE8F0FE);
     final colors = [
       const Color(0xFFE8F0FE),
       const Color(0xFFFCE8E6),
@@ -187,10 +232,11 @@ class _Avatar extends StatelessWidget {
       const Color(0xFFFEF3E2),
       const Color(0xFFF3E8FD),
     ];
-    return colors[name.codeUnitAt(0) % colors.length];
+    return colors[name.trim().codeUnitAt(0) % colors.length];
   }
 
   Color _textColor() {
+    if (name.trim().isEmpty) return const Color(0xFF1A73E8);
     final colors = [
       const Color(0xFF1A73E8),
       const Color(0xFFC5221F),
@@ -198,12 +244,15 @@ class _Avatar extends StatelessWidget {
       const Color(0xFFB06000),
       const Color(0xFF6C2FA0),
     ];
-    return colors[name.codeUnitAt(0) % colors.length];
+    return colors[name.trim().codeUnitAt(0) % colors.length];
   }
 
   @override
   Widget build(BuildContext context) {
-    final initials = name.trim().split(' ').take(2).map((w) => w[0].toUpperCase()).join();
+    final trimName = name.trim();
+    final initials = trimName.isEmpty
+        ? '?'
+        : trimName.split(' ').where((w) => w.isNotEmpty).take(2).map((w) => w[0].toUpperCase()).join();
     return CircleAvatar(
       radius: 24,
       backgroundColor: _bgColor(),
