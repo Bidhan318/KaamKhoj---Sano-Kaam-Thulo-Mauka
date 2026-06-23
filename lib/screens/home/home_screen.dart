@@ -1,5 +1,6 @@
 // lib/screens/home/home_screen.dart
 import 'package:flutter/material.dart';
+import '../job/my_jobs_screen.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
@@ -524,140 +525,129 @@ class _HomeScreenState extends State<HomeScreen> {
     ];
   }
 
-  Widget _buildDrawer(AuthProvider auth) {
-    return Drawer(
+Widget _buildDrawer(AuthProvider auth) {
+  return Drawer(
+    child: Container(
+      color: AppColors.surface, // ensures full background theme
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
           DrawerHeader(
-            decoration: const BoxDecoration(color: AppColors.primary),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppColors.primary,
+                  AppColors.secondary,
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 CircleAvatar(
                   radius: 28,
-                  backgroundColor: AppColors.textLight,
+                  backgroundColor: Colors.white,
                   backgroundImage: auth.user?.profileImage != null
                       ? profileImageProvider(auth.user!.profileImage!)!
                       : null,
                   child: auth.user?.profileImage == null
-                      ? const Icon(Icons.person, size: 32, color: AppColors.primary)
+                      ? const Icon(Icons.person,
+                          size: 32, color: AppColors.primary)
                       : null,
                 ),
                 const SizedBox(height: 8),
                 Text(
                   auth.user?.name ?? 'User',
                   style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16),
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
                 ),
                 Text(
                   auth.isWorker ? 'Worker' : 'Client',
-                  style:
-                      const TextStyle(color: Colors.white70, fontSize: 12),
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 12,
+                  ),
                 ),
               ],
             ),
           ),
-          ListTile(
-            leading: const Icon(Icons.map_outlined),
-            title: const Text('Map View'),
-            onTap: () => Navigator.pop(context),
-          ),
+
+          _tile(Icons.map_outlined, "Map View", () => Navigator.pop(context)),
+
           if (!auth.isWorker) ...[
-            ListTile(
-              leading: const Icon(Icons.people_outline),
-              title: const Text('Browse Workers'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => const WorkerListScreen()));
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.chat_outlined),
-              title: const Text('Messages'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(context,
-                    MaterialPageRoute(builder: (_) => const ChatListScreen()));
-              },
-            ),
-          ] else ...[
-            ListTile(
-              leading: const Icon(Icons.work_outline),
-              title: const Text('Browse Jobs'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(context,
-                    MaterialPageRoute(builder: (_) => const JobListScreen()));
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.person_outline),
-              title: const Text('My Profile'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const WorkerSelfProfileScreen(),
-                  ),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.chat_outlined),
-              title: const Text('Messages'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(context,
-                    MaterialPageRoute(builder: (_) => const ChatListScreen()));
-              },
-            ),
-          ],
-          const Divider(),
-          FutureBuilder<bool>(
-            future: BiometricService.instance.isBiometricEnabled().then((enabled) async {
-            if (!enabled) return false;
-            final saved = await BiometricService.instance.getSavedCredentials();
-            return saved?.email == auth.user?.email;
-            }),
-            builder: (context, snapshot) {
-              if (snapshot.data != true) return const SizedBox.shrink();
-                return ListTile(
-              leading: const Icon(Icons.fingerprint, color: AppColors.error),
-              title: const Text('Remove Fingerprint Login',
-              style: TextStyle(color: AppColors.error)),
-              onTap: () async {
-              await BiometricService.instance.clearCredentials();
-              if (!mounted) return;
-              setState(() {});
+            _tile(Icons.people_outline, "Browse Workers", () {
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Fingerprint login removed.')),
-             );
-            },
-         );
-        },
-        ),
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const WorkerListScreen()),
+              );
+            }),
+            _tile(Icons.work_outline, "My Jobs", () {
+      Navigator.pop(context);
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const MyJobsScreen()),
+      );
+    }),
+            _tile(Icons.chat_outlined, "Messages", () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ChatListScreen()),
+              );
+            }),
+          ] else ...[
+            _tile(Icons.work_outline, "Browse Jobs", () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const JobListScreen()),
+              );
+            }),
+            _tile(Icons.person_outline, "My Profile", () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const WorkerSelfProfileScreen(),
+                ),
+              );
+            }),
+          ],
+
+          const Divider(color: AppColors.divider),
+
           ListTile(
             leading: const Icon(Icons.logout, color: AppColors.error),
-            title: const Text('Logout',
+            title: const Text("Logout",
                 style: TextStyle(color: AppColors.error)),
             onTap: () async {
               await auth.signOut();
               if (!mounted) return;
-              Navigator.pushReplacement(context,
-                  MaterialPageRoute(builder: (_) => const LoginScreen()));
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (_) => const LoginScreen()),
+              );
             },
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
+
+Widget _tile(IconData icon, String title, VoidCallback onTap) {
+  return ListTile(
+    leading: Icon(icon, color: AppColors.primary),
+    title: Text(title),
+    onTap: onTap,
+    splashColor: AppColors.primary.withOpacity(0.1),
+  );
+}
 }
