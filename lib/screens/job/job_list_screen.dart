@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../models/job_model.dart';
+import '../../providers/worker_provider.dart';
+import '../../core/utils/distance_calculator.dart';
+import '../../widgets/distance_badge.dart';
 import 'job_detail_screen.dart';
 
 const List<String> _kSkillCategories = [
@@ -430,19 +434,33 @@ class JobCard extends StatelessWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Row(
-                            children: const [
-                              Icon(Icons.location_on, size: 12, color: AppColors.textSecondary),
-                              SizedBox(width: 4),
-                              Text(
-                                'Kathmandu', // Jobs model currently lacks readable address, using placeholder
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.textPrimary,
-                                ),
-                              ),
-                            ],
+                          Consumer<WorkerProvider>(
+                            builder: (context, workerProvider, child) {
+                              final myWorker = workerProvider.myWorkerProfile;
+                              if (myWorker != null) {
+                                final distance = DistanceCalculator.calculateDistance(
+                                  lat1: myWorker.latitude,
+                                  lon1: myWorker.longitude,
+                                  lat2: job.latitude,
+                                  lon2: job.longitude,
+                                );
+                                return DistanceBadge(distanceKm: distance);
+                              }
+                              return Row(
+                                children: const [
+                                  Icon(Icons.location_on, size: 12, color: AppColors.textSecondary),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    'Unknown',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.textPrimary,
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
                           ),
                           Text(
                             'NPR ${job.budget.toInt()}',

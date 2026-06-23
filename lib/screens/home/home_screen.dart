@@ -529,47 +529,80 @@ class _HomeScreenState extends State<HomeScreen> {
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
-          DrawerHeader(
-            decoration: const BoxDecoration(color: AppColors.primary),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                CircleAvatar(
-                  radius: 28,
-                  backgroundColor: AppColors.textLight,
-                  backgroundImage: auth.user?.profileImage != null
-                      ? profileImageProvider(auth.user!.profileImage!)!
-                      : null,
-                  child: auth.user?.profileImage == null
-                      ? const Icon(Icons.person, size: 32, color: AppColors.primary)
-                      : null,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  auth.user?.name ?? 'User',
-                  style: const TextStyle(
+          Container(
+            height: 220,
+            decoration: const BoxDecoration(gradient: AppColors.primaryGradient),
+            child: SafeArea(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(2),
+                    decoration: const BoxDecoration(
                       color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16),
-                ),
-                Text(
-                  auth.isWorker ? 'Worker' : 'Client',
-                  style:
-                      const TextStyle(color: Colors.white70, fontSize: 12),
-                ),
-              ],
+                      shape: BoxShape.circle,
+                    ),
+                    child: CircleAvatar(
+                      radius: 36,
+                      backgroundColor: AppColors.textLight,
+                      backgroundImage: auth.user?.profileImage != null
+                          ? profileImageProvider(auth.user!.profileImage!)!
+                          : null,
+                      child: auth.user?.profileImage == null
+                          ? const Icon(Icons.person, size: 36, color: AppColors.primary)
+                          : null,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        auth.user?.name ?? 'User',
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          auth.isWorker ? 'Worker' : 'Client',
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    auth.user?.email ?? '',
+                    style: const TextStyle(color: Colors.white70, fontSize: 12),
+                  ),
+                ],
+              ),
             ),
           ),
-          ListTile(
-            leading: const Icon(Icons.map_outlined),
-            title: const Text('Map View'),
-            onTap: () => Navigator.pop(context),
+          const SizedBox(height: 8),
+          Container(
+            color: AppColors.primary.withValues(alpha: 0.1),
+            child: ListTile(
+              leading: const Icon(Icons.map_outlined, color: AppColors.primary),
+              title: const Text('Map View', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary)),
+              onTap: () => Navigator.pop(context),
+            ),
           ),
           if (!auth.isWorker) ...[
             ListTile(
               leading: const Icon(Icons.people_outline),
-              title: const Text('Browse Workers'),
+              title: const Text('Browse Workers', style: TextStyle(fontWeight: FontWeight.w600)),
               onTap: () {
                 Navigator.pop(context);
                 Navigator.push(
@@ -579,8 +612,15 @@ class _HomeScreenState extends State<HomeScreen> {
               },
             ),
             ListTile(
+              leading: const Icon(Icons.work_outline),
+              title: const Text('My Jobs', style: TextStyle(fontWeight: FontWeight.w600)),
+              onTap: () {
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
               leading: const Icon(Icons.chat_outlined),
-              title: const Text('Messages'),
+              title: const Text('Messages', style: TextStyle(fontWeight: FontWeight.w600)),
               onTap: () {
                 Navigator.pop(context);
                 Navigator.push(context,
@@ -590,7 +630,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ] else ...[
             ListTile(
               leading: const Icon(Icons.work_outline),
-              title: const Text('Browse Jobs'),
+              title: const Text('Browse Jobs', style: TextStyle(fontWeight: FontWeight.w600)),
               onTap: () {
                 Navigator.pop(context);
                 Navigator.push(context,
@@ -599,7 +639,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             ListTile(
               leading: const Icon(Icons.person_outline),
-              title: const Text('My Profile'),
+              title: const Text('My Profile', style: TextStyle(fontWeight: FontWeight.w600)),
               onTap: () {
                 Navigator.pop(context);
                 Navigator.push(
@@ -611,8 +651,15 @@ class _HomeScreenState extends State<HomeScreen> {
               },
             ),
             ListTile(
+              leading: const Icon(Icons.business_center_outlined),
+              title: const Text('My Jobs', style: TextStyle(fontWeight: FontWeight.w600)),
+              onTap: () {
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
               leading: const Icon(Icons.chat_outlined),
-              title: const Text('Messages'),
+              title: const Text('Messages', style: TextStyle(fontWeight: FontWeight.w600)),
               onTap: () {
                 Navigator.pop(context);
                 Navigator.push(context,
@@ -623,37 +670,35 @@ class _HomeScreenState extends State<HomeScreen> {
           const Divider(),
           FutureBuilder<bool>(
             future: BiometricService.instance.isBiometricEnabled().then((enabled) async {
-            if (!enabled) return false;
-            final saved = await BiometricService.instance.getSavedCredentials();
-            return saved?.email == auth.user?.email;
+              if (!enabled) return false;
+              final saved = await BiometricService.instance.getSavedCredentials();
+              return saved?.email == auth.user?.email;
             }),
             builder: (context, snapshot) {
               if (snapshot.data != true) return const SizedBox.shrink();
-                return ListTile(
-              leading: const Icon(Icons.fingerprint, color: AppColors.error),
-              title: const Text('Remove Fingerprint Login',
-              style: TextStyle(color: AppColors.error)),
-              onTap: () async {
-              await BiometricService.instance.clearCredentials();
-              if (!mounted) return;
-              setState(() {});
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Fingerprint login removed.')),
-             );
+              return ListTile(
+                leading: const Icon(Icons.fingerprint),
+                title: const Text('Fingerprint Login', style: TextStyle(fontWeight: FontWeight.w600)),
+                trailing: const Icon(Icons.toggle_on, color: AppColors.primary, size: 36),
+                onTap: () async {
+                  await BiometricService.instance.clearCredentials();
+                  if (!mounted) return;
+                  setState(() {});
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Fingerprint login removed.')),
+                  );
+                },
+              );
             },
-         );
-        },
-        ),
+          ),
           ListTile(
             leading: const Icon(Icons.logout, color: AppColors.error),
-            title: const Text('Logout',
-                style: TextStyle(color: AppColors.error)),
+            title: const Text('Logout', style: TextStyle(color: AppColors.error, fontWeight: FontWeight.bold)),
             onTap: () async {
               await auth.signOut();
               if (!mounted) return;
-              Navigator.pushReplacement(context,
-                  MaterialPageRoute(builder: (_) => const LoginScreen()));
+              Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const LoginScreen()));
             },
           ),
         ],

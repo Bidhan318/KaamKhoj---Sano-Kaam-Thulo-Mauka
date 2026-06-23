@@ -179,6 +179,7 @@ class _PreviewTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return WorkerProfileScreen(
       worker: worker,
+      showBackButton: false,
     );
   }
 }
@@ -294,6 +295,7 @@ class _EditTabState extends State<_EditTab> {
       }
       final updated = WorkerModel(
         uid: widget.worker.uid,
+        email: widget.worker.email,
         name: _nameCon.text.trim(),
         phone: _phoneCon.text.trim(),
         profileImage: imageUrl,

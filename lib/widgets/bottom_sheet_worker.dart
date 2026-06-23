@@ -103,7 +103,17 @@ class BottomSheetWorker extends StatelessWidget {
                           worker.name,
                           style: Theme.of(context).textTheme.titleLarge,
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 2),
+                        if (worker.email.isNotEmpty) ...[
+                          Text(
+                            worker.email,
+                            style: const TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 13,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                        ],
                         Row(
                           children: [
                             const Icon(Icons.star,

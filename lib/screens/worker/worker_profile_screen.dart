@@ -10,8 +10,9 @@ import '../../core/utils/profile_image_helper.dart';
 
 class WorkerProfileScreen extends StatelessWidget {
   final WorkerModel worker;
+  final bool showBackButton;
 
-  const WorkerProfileScreen({super.key, required this.worker});
+  const WorkerProfileScreen({super.key, required this.worker, this.showBackButton = true});
 
   @override
   Widget build(BuildContext context) {
@@ -37,6 +38,18 @@ class WorkerProfileScreen extends StatelessWidget {
                     ),
                   ),
                 ),
+                if (worker.email.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Center(
+                    child: Text(
+                      worker.email,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 8),
                 Center(child: _buildRatingRow()),
                 const SizedBox(height: 18),
@@ -313,23 +326,24 @@ class WorkerProfileScreen extends StatelessWidget {
         ),
 
         // Back button
-        Positioned(
-          top: 0,
-          left: 8,
-          child: SafeArea(
-            child: Container(
-              margin: const EdgeInsets.only(top: 8),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.20),
-                shape: BoxShape.circle,
-              ),
-              child: IconButton(
-                icon: const Icon(Icons.arrow_back, color: Colors.white),
-                onPressed: () => Navigator.pop(context),
+        if (showBackButton)
+          Positioned(
+            top: 0,
+            left: 8,
+            child: SafeArea(
+              child: Container(
+                margin: const EdgeInsets.only(top: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.20),
+                  shape: BoxShape.circle,
+                ),
+                child: IconButton(
+                  icon: const Icon(Icons.arrow_back, color: Colors.white),
+                  onPressed: () => Navigator.pop(context),
+                ),
               ),
             ),
           ),
-        ),
       ],
     );
   }

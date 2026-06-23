@@ -7,6 +7,7 @@
 
 class WorkerModel {
   final String uid;             // Same UID as their UserModel
+  final String email;
   final String name;
   final String phone;
   final String? profileImage;   // Firebase Storage URL
@@ -22,6 +23,7 @@ class WorkerModel {
 
   WorkerModel({
     required this.uid,
+    this.email = '',
     required this.name,
     required this.phone,
     this.profileImage,
@@ -39,6 +41,7 @@ class WorkerModel {
   factory WorkerModel.fromMap(Map<String, dynamic> map) {
     return WorkerModel(
       uid: map['uid'] ?? '',
+      email: map['email'] ?? (map['phone']?.toString().contains('@') == true ? map['phone'] : ''),
       name: map['name'] ?? '',
       phone: map['phone'] ?? '',
       profileImage: map['profileImage'],
@@ -56,6 +59,7 @@ class WorkerModel {
   Map<String, dynamic> toMap() {
     return {
       'uid': uid,
+      'email': email,
       'name': name,
       'phone': phone,
       'profileImage': profileImage,
@@ -80,9 +84,10 @@ class WorkerModel {
     int? totalReviews,
   }) {
     return WorkerModel(
-      uid: uid,
-      name: name,
-      phone: phone,
+      uid: uid ?? this.uid,
+      email: email ?? this.email,
+      name: name ?? this.name,
+      phone: phone ?? this.phone,
       profileImage: profileImage,
       skills: skills,
       ratePerDay: ratePerDay,
