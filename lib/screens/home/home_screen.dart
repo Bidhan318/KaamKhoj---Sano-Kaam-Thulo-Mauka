@@ -35,6 +35,8 @@ class _HomeScreenState extends State<HomeScreen> {
   final MapController _mapController = MapController();
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final TextEditingController _searchController = TextEditingController();
+  bool _biometricEnabled = false;
+  bool _biometricAvailable = false;
 
   // Default: Kathmandu
   static const double _defaultLat = 27.7172;
@@ -44,6 +46,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) => _initialize());
+    _loadBiometricState();
   }
 
   @override
@@ -67,6 +70,17 @@ class _HomeScreenState extends State<HomeScreen> {
         LatLng(locationProvider.latitude, locationProvider.longitude),
         14.0,
       );
+    }
+  }
+
+  Future<void> _loadBiometricState() async {
+    final available = await BiometricService.instance.isBiometricAvailable();
+    final enabled = await BiometricService.instance.isBiometricEnabled();
+    if (mounted) {
+      setState(() {
+        _biometricAvailable = available;
+        _biometricEnabled = enabled;
+      });
     }
   }
 
@@ -526,128 +540,361 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
 Widget _buildDrawer(AuthProvider auth) {
+  final user = auth.user;
   return Drawer(
-    child: Container(
-      color: AppColors.surface, // ensures full background theme
-      child: ListView(
-        padding: EdgeInsets.zero,
-        children: [
-          DrawerHeader(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  AppColors.primary,
-                  AppColors.secondary,
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+    backgroundColor: AppColors.surface,
+    child: Column(
+      children: [
+        // ── Gradient Header ───────────────────────────────────────────────
+        Container(
+          width: double.infinity,
+          padding: EdgeInsets.only(
+            top: MediaQuery.of(context).padding.top + 24,
+            bottom: 24,
+          ),
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF3F51B5), Color(0xFF009688)], // AppColors.primaryGradient
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                CircleAvatar(
-                  radius: 28,
-                  backgroundColor: Colors.white,
-                  backgroundImage: auth.user?.profileImage != null
-                      ? profileImageProvider(auth.user!.profileImage!)!
+          ),
+          child: Column(
+            children: [
+              // Avatar
+              Container(
+                padding: const EdgeInsets.all(3),
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white,
+                ),
+                child: CircleAvatar(
+                  radius: 42,
+                  backgroundColor: AppColors.background,
+                  backgroundImage: user?.profileImage != null
+                      ? profileImageProvider(user!.profileImage!)
                       : null,
-                  child: auth.user?.profileImage == null
+                  child: user?.profileImage == null
                       ? const Icon(Icons.person,
-                          size: 32, color: AppColors.primary)
+                          size: 40, color: AppColors.textSecondary)
                       : null,
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  auth.user?.name ?? 'User',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
+              ),
+              const SizedBox(height: 16),
+              // Name + Role Badge
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: Text(
+                      user?.name ?? 'User',
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                        letterSpacing: 0.2,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
-                ),
-                Text(
-                  auth.isWorker ? 'Worker' : 'Client',
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 12,
+                  const SizedBox(width: 8),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withAlpha(230),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      auth.isWorker ? 'Worker' : 'Client',
+                      style: const TextStyle(
+                        color: AppColors.primaryDark,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                   ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              // Email
+              Text(
+                user?.email ?? '',
+                style: TextStyle(
+                  color: Colors.white.withAlpha(200),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w400,
                 ),
+              ),
+            ],
+          ),
+        ),
+
+        // ── Menu Items ──────────────────────────────────────────────────
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+              children: [
+                _drawerItem(
+                  icon: Icons.map_outlined,
+                  label: 'Map View',
+                  isActive: true,
+                  onTap: () => Navigator.pop(context),
+                ),
+                if (!auth.isWorker) ...[
+                  _drawerItem(
+                    icon: Icons.people_outline,
+                    label: 'Browse Workers',
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const WorkerListScreen()),
+                      );
+                    },
+                  ),
+                  _drawerItem(
+                    icon: Icons.work_outline,
+                    label: 'My Jobs',
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const MyJobsScreen()),
+                      );
+                    },
+                  ),
+                  _buildMessagesItem(auth),
+                ] else ...[
+                  _drawerItem(
+                    icon: Icons.work_outline,
+                    label: 'Browse Jobs',
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const JobListScreen()),
+                      );
+                    },
+                  ),
+                  _drawerItem(
+                    icon: Icons.person_outline,
+                    label: 'My Profile',
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) =>
+                                const WorkerSelfProfileScreen()),
+                      );
+                    },
+                  ),
+                ],
+
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16),
+                  child: Divider(color: AppColors.divider, height: 1),
+                ),
+
+                // ── Fingerprint Toggle ──────────────────────────────────
+                if (_biometricAvailable && _biometricEnabled)
+                  _buildFingerprintToggle(),
+
+                // ── Logout ──────────────────────────────────────────────
+                _buildLogoutItem(auth),
               ],
             ),
           ),
 
-          _tile(Icons.map_outlined, "Map View", () => Navigator.pop(context)),
-
-          if (!auth.isWorker) ...[
-            _tile(Icons.people_outline, "Browse Workers", () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const WorkerListScreen()),
-              );
-            }),
-            _tile(Icons.work_outline, "My Jobs", () {
-      Navigator.pop(context);
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const MyJobsScreen()),
-      );
-    }),
-            _tile(Icons.chat_outlined, "Messages", () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const ChatListScreen()),
-              );
-            }),
-          ] else ...[
-            _tile(Icons.work_outline, "Browse Jobs", () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const JobListScreen()),
-              );
-            }),
-            _tile(Icons.person_outline, "My Profile", () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const WorkerSelfProfileScreen(),
-                ),
-              );
-            }),
-          ],
-
-          const Divider(color: AppColors.divider),
-
-          ListTile(
-            leading: const Icon(Icons.logout, color: AppColors.error),
-            title: const Text("Logout",
-                style: TextStyle(color: AppColors.error)),
-            onTap: () async {
-              await auth.signOut();
-              if (!mounted) return;
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (_) => const LoginScreen()),
-              );
-            },
+      // ── Version ─────────────────────────────────────────────────────
+      Padding(
+        padding: const EdgeInsets.only(bottom: 16),
+        child: Text(
+          'v1.0.0',
+          style: TextStyle(
+            color: AppColors.textSecondary,
+            fontSize: 12,
           ),
-        ],
+        ),
       ),
+    ],
+  ),
+);
+}
+
+Widget _drawerItem({
+  required IconData icon,
+  required String label,
+  required VoidCallback onTap,
+  bool isActive = false,
+  int? badge,
+}) {
+  return Container(
+    margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+    decoration: BoxDecoration(
+      color:
+          isActive ? AppColors.primary.withOpacity(0.08) : Colors.transparent,
+      borderRadius: BorderRadius.circular(12),
+    ),
+    child: ListTile(
+      leading: Icon(
+        icon,
+        color: isActive ? AppColors.primary : AppColors.textSecondary,
+        size: 22,
+      ),
+      title: Text(
+      label,
+      style: TextStyle(
+        color: isActive ? AppColors.primaryDark : AppColors.textPrimary,
+        fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+        fontSize: 15,
+        letterSpacing: isActive ? 0.3 : 0,
+      ),
+    ),
+      trailing: badge != null
+          ? Container(
+              padding: const EdgeInsets.all(6),
+              decoration: const BoxDecoration(
+                color: AppColors.error,
+                shape: BoxShape.circle,
+              ),
+              child: Text(
+                '$badge',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            )
+          : null,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      onTap: onTap,
+      splashColor: AppColors.primary.withOpacity(0.1),
+      dense: true,
+      visualDensity: const VisualDensity(vertical: 0.5),
     ),
   );
 }
 
-Widget _tile(IconData icon, String title, VoidCallback onTap) {
-  return ListTile(
-    leading: Icon(icon, color: AppColors.primary),
-    title: Text(title),
-    onTap: onTap,
-    splashColor: AppColors.primary.withOpacity(0.1),
+Widget _buildMessagesItem(AuthProvider auth) {
+  if (auth.user == null) {
+    return _drawerItem(
+      icon: Icons.chat_bubble_outline,
+      label: 'Messages',
+      onTap: () {
+        Navigator.pop(context);
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const ChatListScreen()),
+        );
+      },
+    );
+  }
+  return StreamBuilder(
+    stream: FirebaseFirestore.instance
+        .collection('chats')
+        .where('participants', arrayContains: auth.user!.uid)
+        .snapshots(),
+    builder: (context, snapshot) {
+      int unreadCount = 0;
+      if (snapshot.hasData) {
+        for (final doc in snapshot.data!.docs) {
+          final data = doc.data() as Map<String, dynamic>;
+          if (data['lastSenderId'] != null &&
+              data['lastSenderId'] != auth.user!.uid) {
+            unreadCount++;
+          }
+        }
+      }
+      return _drawerItem(
+        icon: Icons.chat_bubble_outline,
+        label: 'Messages',
+        badge: unreadCount > 0 ? unreadCount : null,
+        onTap: () {
+          Navigator.pop(context);
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const ChatListScreen()),
+          );
+        },
+      );
+    },
+  );
+}
+
+Widget _buildFingerprintToggle() {
+  return Container(
+    margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+    child: ListTile(
+      leading: const Icon(
+        Icons.fingerprint,
+        color: AppColors.textSecondary,
+        size: 22,
+      ),
+      title: const Text(
+        'Fingerprint Login',
+        style: TextStyle(
+          color: AppColors.textPrimary,
+          fontWeight: FontWeight.w500,
+          fontSize: 15,
+        ),
+      ),
+      trailing: Switch(
+        value: _biometricEnabled,
+        activeColor: AppColors.primary,
+        onChanged: (value) async {
+          if (!value) {
+            await BiometricService.instance.clearCredentials();
+            if (mounted) {
+              setState(() {
+                _biometricEnabled = false;
+              });
+            }
+          }
+        },
+      ),
+      dense: true,
+      visualDensity: const VisualDensity(vertical: 0.5),
+    ),
+  );
+}
+
+Widget _buildLogoutItem(AuthProvider auth) {
+  return Container(
+    margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+    child: ListTile(
+      leading: const Icon(
+        Icons.logout,
+        color: AppColors.error,
+        size: 22,
+      ),
+      title: const Text(
+        'Logout',
+        style: TextStyle(
+          color: AppColors.error,
+          fontWeight: FontWeight.w500,
+          fontSize: 15,
+        ),
+      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      onTap: () async {
+        await auth.signOut();
+        if (!mounted) return;
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const LoginScreen()),
+        );
+      },
+      splashColor: AppColors.error.withOpacity(0.1),
+      dense: true,
+      visualDensity: const VisualDensity(vertical: 0.5),
+    ),
   );
 }
 }
