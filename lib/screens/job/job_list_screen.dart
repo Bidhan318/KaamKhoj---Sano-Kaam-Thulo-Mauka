@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../models/job_model.dart';
+import '../../providers/location_provider.dart';
 import '../../providers/worker_provider.dart';
 import '../../core/utils/distance_calculator.dart';
 import '../../widgets/distance_badge.dart';
@@ -31,6 +32,7 @@ class JobListScreen extends StatefulWidget {
 class _JobListScreenState extends State<JobListScreen> {
   String _selectedSkill = 'All';
   String _searchQuery = '';
+  double _searchRadius = 20;
 
   @override
   Widget build(BuildContext context) {
@@ -193,6 +195,63 @@ class _JobListScreenState extends State<JobListScreen> {
                 
                 const SizedBox(height: 20),
                 
+                // ── Search Radius ──
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                  child: Row(
+                    children: [
+                      const Text(
+                        'Radius',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          '${_searchRadius.toInt()} km',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: SliderTheme(
+                    data: SliderTheme.of(context).copyWith(
+                      activeTrackColor: AppColors.primary,
+                      inactiveTrackColor: Colors.grey.shade300,
+                      thumbColor: Colors.white,
+                      overlayColor: AppColors.primary.withValues(alpha: 0.2),
+                      trackHeight: 4.0,
+                    ),
+                    child: Slider(
+                      value: _searchRadius,
+                      min: 1,
+                      max: 20,
+                      divisions: 19,
+                      onChanged: (val) {
+                        setState(() {
+                          _searchRadius = val;
+                        });
+                      },
+                    ),
+                  ),
+                ),
+                
                 // ── Job List ──
                 Expanded(
                   child: StreamBuilder<QuerySnapshot>(
@@ -237,6 +296,20 @@ class _JobListScreenState extends State<JobListScreen> {
                           j.title.toLowerCase().contains(_searchQuery) ||
                           j.requiredSkill.toLowerCase().contains(_searchQuery)
                         ).toList();
+                      }
+
+                      // Apply distance filter
+                      final locationProvider = context.read<LocationProvider>();
+                      if (locationProvider.hasLocation) {
+                        jobs = jobs.where((j) {
+                          final dist = DistanceCalculator.calculateDistance(
+                            lat1: locationProvider.latitude,
+                            lon1: locationProvider.longitude,
+                            lat2: j.latitude,
+                            lon2: j.longitude,
+                          );
+                          return dist <= _searchRadius;
+                        }).toList();
                       }
 
                       if (jobs.isEmpty) {
@@ -434,13 +507,12 @@ class JobCard extends StatelessWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Consumer<WorkerProvider>(
-                            builder: (context, workerProvider, child) {
-                              final myWorker = workerProvider.myWorkerProfile;
-                              if (myWorker != null) {
+                          Consumer<LocationProvider>(
+                            builder: (context, locationProvider, child) {
+                              if (locationProvider.hasLocation) {
                                 final distance = DistanceCalculator.calculateDistance(
-                                  lat1: myWorker.latitude,
-                                  lon1: myWorker.longitude,
+                                  lat1: locationProvider.latitude,
+                                  lon1: locationProvider.longitude,
                                   lat2: job.latitude,
                                   lon2: job.longitude,
                                 );

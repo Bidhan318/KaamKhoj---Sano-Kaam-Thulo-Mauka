@@ -18,6 +18,10 @@ class JobModel {
   final String status;          // 'open' | 'assigned' | 'completed' | 'cancelled'
   final String? assignedWorkerUid; // Set when a worker accepts
   final DateTime postedAt;
+  final DateTime? startedAt;
+  final DateTime? completedAt;
+  final bool workerCompleted;
+  final bool clientCompleted;
 
   JobModel({
     required this.jobId,
@@ -33,6 +37,10 @@ class JobModel {
     this.status = 'open',
     this.assignedWorkerUid,
     required this.postedAt,
+    this.startedAt,
+    this.completedAt,
+    this.workerCompleted = false,
+    this.clientCompleted = false,
   });
 
   factory JobModel.fromMap(Map<String, dynamic> map, String id) {
@@ -50,6 +58,10 @@ class JobModel {
       status: map['status'] ?? 'open',
       assignedWorkerUid: map['assignedWorkerUid'],
       postedAt: DateTime.parse(map['postedAt'] ?? DateTime.now().toIso8601String()),
+      startedAt: map['startedAt'] != null ? DateTime.parse(map['startedAt']) : null,
+      completedAt: map['completedAt'] != null ? DateTime.parse(map['completedAt']) : null,
+      workerCompleted: map['workerCompleted'] ?? false,
+      clientCompleted: map['clientCompleted'] ?? false,
     );
   }
 
@@ -67,10 +79,21 @@ class JobModel {
       'status': status,
       'assignedWorkerUid': assignedWorkerUid,
       'postedAt': postedAt.toIso8601String(),
+      if (startedAt != null) 'startedAt': startedAt!.toIso8601String(),
+      if (completedAt != null) 'completedAt': completedAt!.toIso8601String(),
+      'workerCompleted': workerCompleted,
+      'clientCompleted': clientCompleted,
     };
   }
 
-  JobModel copyWith({String? status, String? assignedWorkerUid}) {
+  JobModel copyWith({
+    String? status,
+    String? assignedWorkerUid,
+    DateTime? startedAt,
+    DateTime? completedAt,
+    bool? workerCompleted,
+    bool? clientCompleted,
+  }) {
     return JobModel(
       jobId: jobId,
       clientUid: clientUid,
@@ -85,6 +108,10 @@ class JobModel {
       status: status ?? this.status,
       assignedWorkerUid: assignedWorkerUid ?? this.assignedWorkerUid,
       postedAt: postedAt,
+      startedAt: startedAt ?? this.startedAt,
+      completedAt: completedAt ?? this.completedAt,
+      workerCompleted: workerCompleted ?? this.workerCompleted,
+      clientCompleted: clientCompleted ?? this.clientCompleted,
     );
   }
 }

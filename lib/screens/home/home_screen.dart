@@ -22,6 +22,8 @@ import '../chat/chat_list_screen.dart';
 import '../worker/worker_profile_screen.dart';
 import '../worker/worker_self_profile_screen.dart';
 import '../../core/utils/profile_image_helper.dart';
+import '../../core/services/routing_service.dart';
+import '../chat/chat_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -34,6 +36,10 @@ class _HomeScreenState extends State<HomeScreen> {
   final MapController _mapController = MapController();
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final TextEditingController _searchController = TextEditingController();
+
+  Map<String, List<LatLng>> _activeRoutes = {};
+  Set<String> _fetchingRoutes = {};
+  bool _hasOngoingJob = false;
 
   // Default: Kathmandu
   static const double _defaultLat = 27.7172;
@@ -126,9 +132,12 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // ── Job markers for WORKER view ────────────────────────────────────────────
-  List<Marker> _buildJobMarkers(List<JobModel> jobs) {
+  List<Marker> _buildJobMarkers(List<JobModel> jobs, {Set<String>? assignedJobIds}) {
     return jobs.map((job) {
       if (job.latitude == 0 && job.longitude == 0) return null;
+      final isAssigned = assignedJobIds?.contains(job.jobId) ?? false;
+      final markerColor = isAssigned ? Colors.green : Colors.orange;
+
       return Marker(
         point: LatLng(job.latitude, job.longitude),
         width: 100,
@@ -144,10 +153,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 height: 44,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.orange, width: 3),
+                  border: Border.all(color: markerColor, width: 3),
                   color: Colors.white,
                 ),
-                child: const Icon(Icons.work, color: Colors.orange),
+                child: Icon(Icons.work, color: markerColor),
               ),
               const SizedBox(height: 4),
               Container(
@@ -219,6 +228,12 @@ class _HomeScreenState extends State<HomeScreen> {
     final location = context.watch<LocationProvider>();
     final auth = context.watch<AuthProvider>();
     final workerProvider = context.watch<WorkerProvider>();
+    
+    // During logout, auth.user becomes null before the screen navigates away.
+    if (auth.user == null) {
+      return const Scaffold(backgroundColor: AppColors.background, body: Center(child: CircularProgressIndicator()));
+    }
+
     final isWorker = auth.isWorker;
 
     final centerLat = location.hasLocation ? location.latitude : _defaultLat;
@@ -231,8 +246,8 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           // ── Map ──────────────────────────────────────────────────────────
           isWorker
-              ? _buildWorkerMapView(centerLat, centerLon, location)
-              : _buildClientMapView(centerLat, centerLon, location, workerProvider),
+              ? _buildWorkerMapView(centerLat, centerLon, location, auth)
+              : _buildClientMapView(centerLat, centerLon, location, workerProvider, auth),
 
           // ── Custom Gradient Header ───────────────────────────────────────
           Positioned(
@@ -353,7 +368,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
           // ── Bottom Action Buttons ─────────────────────────────────────────
           Positioned(
-            bottom: 24,
+            bottom: _hasOngoingJob ? 220 : 24,
             right: 24,
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -440,39 +455,115 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // ── CLIENT view: shows worker pins ────────────────────────────────────────
   Widget _buildClientMapView(double centerLat, double centerLon,
-      LocationProvider location, WorkerProvider workerProvider) {
-    return StreamBuilder<List<WorkerModel>>(
-      stream: location.hasLocation
-          ? workerProvider.watchNearbyWorkers(
-              clientLat: location.latitude,
-              clientLon: location.longitude,
-            )
-          : const Stream.empty(),
-      builder: (context, snapshot) {
-        List<WorkerModel> workers = snapshot.data ?? [];
-        
-        // Apply skill filter locally
-        final query = workerProvider.skillFilter.toLowerCase();
-        if (query.isNotEmpty) {
-          workers = workers.where((w) => w.skills.any((s) => s.toLowerCase().contains(query))).toList();
+      LocationProvider location, WorkerProvider workerProvider, AuthProvider auth) {
+    return StreamBuilder<List<JobModel>>(
+      stream: FirebaseFirestore.instance
+          .collection('jobs')
+          .where('clientUid', isEqualTo: auth.user!.uid)
+          .where('status', isEqualTo: 'assigned')
+          .snapshots()
+          .map((snap) => snap.docs.map((doc) => JobModel.fromMap(doc.data(), doc.id)).toList()),
+      builder: (context, assignedSnapshot) {
+        final assignedJobs = assignedSnapshot.data ?? [];
+        final hasAssignedJob = assignedJobs.isNotEmpty;
+        final assignedJob = hasAssignedJob ? assignedJobs.first : null;
+        final assignedWorkerUid = assignedJob?.assignedWorkerUid;
+
+        // Track ongoing job state for button positioning
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (_hasOngoingJob != hasAssignedJob && mounted) {
+            setState(() { _hasOngoingJob = hasAssignedJob; });
+          }
+        });
+
+        // Clean up stale routes when job completes/cancels
+        if (!hasAssignedJob && _activeRoutes.isNotEmpty) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) setState(() { _activeRoutes.clear(); _fetchingRoutes.clear(); });
+          });
         }
 
-        final workerMarkers = _buildWorkerMarkers(workers);
-        final myMarker = _myLocationMarker(location);
+        return StreamBuilder<List<WorkerModel>>(
+          stream: location.hasLocation
+              ? workerProvider.watchNearbyWorkers(
+                  clientLat: centerLat, 
+                  clientLon: centerLon,
+                  radiusKm: hasAssignedJob ? 100 : null,
+                )
+              : const Stream.empty(),
+          builder: (context, snapshot) {
+            List<WorkerModel> allWorkers = snapshot.data ?? [];
+            List<WorkerModel> displayWorkers = [];
 
-        return FlutterMap(
-          mapController: _mapController,
-          options: MapOptions(
-            initialCenter: LatLng(centerLat, centerLon),
-            initialZoom: 14,
-          ),
-          children: [
-            TileLayer(
-              urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-              userAgentPackageName: 'com.example.kaamkhoj_v1',
-            ),
-            MarkerLayer(markers: [...myMarker, ...workerMarkers]),
-          ],
+            final query = workerProvider.skillFilter.toLowerCase();
+            for (var w in allWorkers) {
+               if (assignedWorkerUid != null && w.uid == assignedWorkerUid) {
+                 displayWorkers.add(w);
+               } else if (!hasAssignedJob && (query.isEmpty || w.skills.any((s) => s.toLowerCase().contains(query)))) {
+                 displayWorkers.add(w);
+               }
+            }
+
+            final workerMarkers = _buildWorkerMarkers(displayWorkers);
+            final myMarker = _myLocationMarker(location);
+            
+            List<Marker> activeJobMarkers = [];
+            if (hasAssignedJob && assignedJob != null) {
+              activeJobMarkers = _buildJobMarkers([assignedJob], assignedJobIds: {assignedJob.jobId});
+            }
+
+            // Route from assigned worker to job location (single job only)
+            if (hasAssignedJob && assignedJob != null && assignedWorkerUid != null) {
+              final trackingWorker = displayWorkers.where((w) => w.uid == assignedWorkerUid).firstOrNull;
+              if (trackingWorker != null) {
+                if (!_activeRoutes.containsKey(assignedJob.jobId) && !_fetchingRoutes.contains(assignedJob.jobId)) {
+                  _fetchingRoutes.add(assignedJob.jobId);
+                  RoutingService.getRoute(
+                    LatLng(trackingWorker.latitude, trackingWorker.longitude),
+                    LatLng(assignedJob.latitude, assignedJob.longitude),
+                  ).then((route) {
+                    if (mounted) setState(() { _activeRoutes[assignedJob.jobId] = route; _fetchingRoutes.remove(assignedJob.jobId); });
+                  });
+                }
+              }
+            }
+
+            final routeForJob = (assignedJob != null && _activeRoutes.containsKey(assignedJob.jobId))
+                ? _activeRoutes[assignedJob.jobId]!
+                : null;
+
+            return Stack(
+              children: [
+                FlutterMap(
+                  mapController: _mapController,
+                  options: MapOptions(
+                    initialCenter: LatLng(centerLat, centerLon),
+                    initialZoom: 14,
+                  ),
+                  children: [
+                    TileLayer(
+                      urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                      userAgentPackageName: 'com.example.kaamkhoj_v1',
+                    ),
+                    if (routeForJob != null)
+                      PolylineLayer(
+                        polylines: [
+                          Polyline(points: routeForJob, strokeWidth: 4.0, color: Colors.blueAccent),
+                        ],
+                      ),
+                    MarkerLayer(markers: [...activeJobMarkers, ...workerMarkers, ...myMarker]),
+                  ],
+                ),
+                if (hasAssignedJob && assignedJob != null)
+                  Positioned(
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    child: _buildOngoingWorkDashboard(assignedJob, isWorker: false, auth: auth),
+                  ),
+              ],
+            );
+          },
         );
       },
     );
@@ -480,35 +571,236 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // ── WORKER view: shows job pins ───────────────────────────────────────────
   Widget _buildWorkerMapView(
-      double centerLat, double centerLon, LocationProvider location) {
+      double centerLat, double centerLon, LocationProvider location, AuthProvider auth) {
     return StreamBuilder<List<JobModel>>(
       stream: FirebaseFirestore.instance
           .collection('jobs')
-          .where('status', isEqualTo: 'open')
+          .where('assignedWorkerUid', isEqualTo: auth.user!.uid)
+          .where('status', isEqualTo: 'assigned')
           .snapshots()
-          .map((snap) => snap.docs
-              .map((doc) => JobModel.fromMap(doc.data(), doc.id))
-              .toList()),
-      builder: (context, snapshot) {
-        final jobs = snapshot.data ?? [];
-        final jobMarkers = _buildJobMarkers(jobs);
-        final myMarker = _myLocationMarker(location);
+          .map((snap) => snap.docs.map((doc) => JobModel.fromMap(doc.data(), doc.id)).toList()),
+      builder: (context, assignedSnapshot) {
+        final assignedJobs = assignedSnapshot.data ?? [];
+        final hasAssignedJob = assignedJobs.isNotEmpty;
+        final assignedJob = hasAssignedJob ? assignedJobs.first : null;
 
-        return FlutterMap(
-          mapController: _mapController,
-          options: MapOptions(
-            initialCenter: LatLng(centerLat, centerLon),
-            initialZoom: 14,
-          ),
-          children: [
-            TileLayer(
-              urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-              userAgentPackageName: 'com.example.kaamkhoj_v1',
-            ),
-            MarkerLayer(markers: [...myMarker, ...jobMarkers]),
-          ],
+        // Track ongoing job state for button positioning
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (_hasOngoingJob != hasAssignedJob && mounted) {
+            setState(() { _hasOngoingJob = hasAssignedJob; });
+          }
+        });
+
+        // Clean up stale routes when job completes/cancels
+        if (!hasAssignedJob && _activeRoutes.isNotEmpty) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) setState(() { _activeRoutes.clear(); _fetchingRoutes.clear(); });
+          });
+        }
+
+        return StreamBuilder<List<JobModel>>(
+          stream: hasAssignedJob
+              ? const Stream.empty()
+              : FirebaseFirestore.instance
+                  .collection('jobs')
+                  .where('status', isEqualTo: 'open')
+                  .snapshots()
+                  .map((snap) => snap.docs
+                      .map((doc) => JobModel.fromMap(doc.data(), doc.id))
+                      .toList()),
+          builder: (context, snapshot) {
+            final openJobs = snapshot.data ?? [];
+            // When assigned: only show that ONE job pin. Otherwise: show all open jobs.
+            final jobsToDisplay = hasAssignedJob ? [assignedJob!] : openJobs;
+            final jobMarkers = _buildJobMarkers(
+              jobsToDisplay, 
+              assignedJobIds: hasAssignedJob ? {assignedJob!.jobId} : {},
+            );
+            final myMarker = _myLocationMarker(location);
+
+            // Route from worker's location to their single assigned job
+            if (hasAssignedJob && assignedJob != null && location.hasLocation) {
+              if (!_activeRoutes.containsKey(assignedJob.jobId) && !_fetchingRoutes.contains(assignedJob.jobId)) {
+                _fetchingRoutes.add(assignedJob.jobId);
+                RoutingService.getRoute(
+                  LatLng(location.latitude, location.longitude),
+                  LatLng(assignedJob.latitude, assignedJob.longitude),
+                ).then((route) {
+                  if (mounted) setState(() { _activeRoutes[assignedJob.jobId] = route; _fetchingRoutes.remove(assignedJob.jobId); });
+                });
+              }
+            }
+
+            final routeForJob = (assignedJob != null && _activeRoutes.containsKey(assignedJob.jobId))
+                ? _activeRoutes[assignedJob.jobId]!
+                : null;
+
+            return Stack(
+              children: [
+                FlutterMap(
+                  mapController: _mapController,
+                  options: MapOptions(
+                    initialCenter: LatLng(centerLat, centerLon),
+                    initialZoom: 14,
+                  ),
+                  children: [
+                    TileLayer(
+                      urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                      userAgentPackageName: 'com.example.kaamkhoj_v1',
+                    ),
+                    if (routeForJob != null)
+                      PolylineLayer(
+                        polylines: [
+                          Polyline(points: routeForJob, strokeWidth: 4.0, color: Colors.blueAccent),
+                        ],
+                      ),
+                    MarkerLayer(markers: [...jobMarkers, ...myMarker]),
+                  ],
+                ),
+                if (hasAssignedJob && assignedJob != null)
+                  Positioned(
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    child: _buildOngoingWorkDashboard(assignedJob, isWorker: true, auth: auth),
+                  ),
+              ],
+            );
+          },
         );
-      },
+      }
+    );
+  }
+
+  Widget _buildOngoingWorkDashboard(JobModel job, {required bool isWorker, required AuthProvider auth}) {
+    final iMarkedComplete = isWorker ? job.workerCompleted : job.clientCompleted;
+    final otherMarkedComplete = isWorker ? job.clientCompleted : job.workerCompleted;
+    final completeField = isWorker ? 'workerCompleted' : 'clientCompleted';
+
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 10, offset: Offset(0, -2))],
+      ),
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Work Ongoing', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppColors.primary)),
+                  const SizedBox(height: 4),
+                  Text(job.title, style: const TextStyle(color: AppColors.textSecondary, fontSize: 14)),
+                ],
+              ),
+              if (iMarkedComplete)
+                const Chip(
+                  label: Text('Waiting for partner...', style: TextStyle(fontSize: 12, color: Colors.white)),
+                  backgroundColor: AppColors.warning,
+                )
+            ],
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ChatScreen(
+                          otherUid: isWorker ? job.clientUid : job.assignedWorkerUid!,
+                          otherName: isWorker ? job.clientName : 'Worker',
+                        ),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.chat_bubble_outline, size: 18),
+                  label: const Text('Message'),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    foregroundColor: AppColors.primary,
+                    side: const BorderSide(color: AppColors.primary),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: iMarkedComplete ? null : () async {
+                    try {
+                      final updates = <String, dynamic>{
+                        completeField: true,
+                      };
+                      if (otherMarkedComplete) {
+                        updates['status'] = 'completed';
+                        updates['completedAt'] = DateTime.now().toIso8601String();
+                      }
+                      await FirebaseFirestore.instance.collection('jobs').doc(job.jobId).update(updates);
+                      if (mounted) {
+                        setState(() {
+                          _activeRoutes.remove(job.jobId);
+                        });
+                      }
+                    } catch (e) {
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+                    }
+                  },
+                  icon: const Icon(Icons.check_circle_outline, size: 18),
+                  label: Text(iMarkedComplete ? 'Waiting' : 'Finish Work'),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    backgroundColor: AppColors.success,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    elevation: 0,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: TextButton(
+              onPressed: () async {
+                final confirm = await showDialog<bool>(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    title: const Text('Cancel Job?'),
+                    content: const Text('Are you sure you want to cancel this ongoing job?'),
+                    actions: [
+                      TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('No')),
+                      TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Yes', style: TextStyle(color: AppColors.error))),
+                    ],
+                  ),
+                );
+                if (confirm == true) {
+                  await FirebaseFirestore.instance.collection('jobs').doc(job.jobId).update({
+                    'status': 'cancelled',
+                  });
+                  if (mounted) {
+                    setState(() {
+                      _activeRoutes.remove(job.jobId);
+                    });
+                  }
+                }
+              },
+              style: TextButton.styleFrom(foregroundColor: AppColors.error),
+              child: const Text('Cancel Job'),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
