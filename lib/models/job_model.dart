@@ -22,6 +22,7 @@ class JobModel {
   final DateTime? completedAt;
   final bool workerCompleted;
   final bool clientCompleted;
+  final bool isDirectHire;
 
   JobModel({
     required this.jobId,
@@ -41,6 +42,7 @@ class JobModel {
     this.completedAt,
     this.workerCompleted = false,
     this.clientCompleted = false,
+    this.isDirectHire = false,
   });
 
   factory JobModel.fromMap(Map<String, dynamic> map, String id) {
@@ -62,6 +64,7 @@ class JobModel {
       completedAt: map['completedAt'] != null ? DateTime.parse(map['completedAt']) : null,
       workerCompleted: map['workerCompleted'] ?? false,
       clientCompleted: map['clientCompleted'] ?? false,
+      isDirectHire: map['isDirectHire'] ?? false,
     );
   }
 
@@ -83,6 +86,7 @@ class JobModel {
       if (completedAt != null) 'completedAt': completedAt!.toIso8601String(),
       'workerCompleted': workerCompleted,
       'clientCompleted': clientCompleted,
+      'isDirectHire': isDirectHire,
     };
   }
 
@@ -93,6 +97,7 @@ class JobModel {
     DateTime? completedAt,
     bool? workerCompleted,
     bool? clientCompleted,
+    bool? isDirectHire,
   }) {
     return JobModel(
       jobId: jobId,
@@ -112,6 +117,7 @@ class JobModel {
       completedAt: completedAt ?? this.completedAt,
       workerCompleted: workerCompleted ?? this.workerCompleted,
       clientCompleted: clientCompleted ?? this.clientCompleted,
+      isDirectHire: isDirectHire ?? this.isDirectHire,
     );
   }
 }
