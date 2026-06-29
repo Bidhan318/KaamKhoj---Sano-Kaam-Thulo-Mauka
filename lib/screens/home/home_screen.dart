@@ -40,6 +40,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Map<String, List<LatLng>> _activeRoutes = {};
   Set<String> _fetchingRoutes = {};
   bool _hasOngoingJob = false;
+  String? _selectedAssignedJobId;
 
   // Default: Kathmandu
   static const double _defaultLat = 27.7172;
@@ -466,7 +467,16 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (context, assignedSnapshot) {
         final assignedJobs = assignedSnapshot.data ?? [];
         final hasAssignedJob = assignedJobs.isNotEmpty;
-        final assignedJob = hasAssignedJob ? assignedJobs.first : null;
+        
+        JobModel? assignedJob;
+        if (hasAssignedJob) {
+          if (_selectedAssignedJobId != null) {
+            assignedJob = assignedJobs.where((j) => j.jobId == _selectedAssignedJobId).firstOrNull ?? assignedJobs.first;
+          } else {
+            assignedJob = assignedJobs.first;
+          }
+        }
+        
         final assignedWorkerUid = assignedJob?.assignedWorkerUid;
 
         // Track ongoing job state for button positioning
@@ -522,7 +532,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     LatLng(trackingWorker.latitude, trackingWorker.longitude),
                     LatLng(assignedJob.latitude, assignedJob.longitude),
                   ).then((route) {
-                    if (mounted) setState(() { _activeRoutes[assignedJob.jobId] = route; _fetchingRoutes.remove(assignedJob.jobId); });
+                    if (mounted) setState(() { _activeRoutes[assignedJob!.jobId] = route; _fetchingRoutes.remove(assignedJob!.jobId); });
                   });
                 }
               }
@@ -559,7 +569,15 @@ class _HomeScreenState extends State<HomeScreen> {
                     bottom: 0,
                     left: 0,
                     right: 0,
-                    child: _buildOngoingWorkDashboard(assignedJob, isWorker: false, auth: auth),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        if (assignedJobs.length > 1)
+                          _buildJobSwitcher(assignedJobs, assignedJob),
+                        _buildOngoingWorkDashboard(assignedJob, isWorker: false, auth: auth),
+                      ],
+                    ),
                   ),
               ],
             );
@@ -582,7 +600,15 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (context, assignedSnapshot) {
         final assignedJobs = assignedSnapshot.data ?? [];
         final hasAssignedJob = assignedJobs.isNotEmpty;
-        final assignedJob = hasAssignedJob ? assignedJobs.first : null;
+        
+        JobModel? assignedJob;
+        if (hasAssignedJob) {
+          if (_selectedAssignedJobId != null) {
+            assignedJob = assignedJobs.where((j) => j.jobId == _selectedAssignedJobId).firstOrNull ?? assignedJobs.first;
+          } else {
+            assignedJob = assignedJobs.first;
+          }
+        }
 
         // Track ongoing job state for button positioning
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -626,7 +652,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   LatLng(location.latitude, location.longitude),
                   LatLng(assignedJob.latitude, assignedJob.longitude),
                 ).then((route) {
-                  if (mounted) setState(() { _activeRoutes[assignedJob.jobId] = route; _fetchingRoutes.remove(assignedJob.jobId); });
+                  if (mounted) setState(() { _activeRoutes[assignedJob!.jobId] = route; _fetchingRoutes.remove(assignedJob!.jobId); });
                 });
               }
             }
@@ -662,7 +688,15 @@ class _HomeScreenState extends State<HomeScreen> {
                     bottom: 0,
                     left: 0,
                     right: 0,
-                    child: _buildOngoingWorkDashboard(assignedJob, isWorker: true, auth: auth),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        if (assignedJobs.length > 1)
+                          _buildJobSwitcher(assignedJobs, assignedJob),
+                        _buildOngoingWorkDashboard(assignedJob, isWorker: true, auth: auth),
+                      ],
+                    ),
                   ),
               ],
             );
@@ -672,10 +706,41 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Widget _buildJobSwitcher(List<JobModel> jobs, JobModel currentJob) {
+    return Container(
+      height: 48,
+      margin: const EdgeInsets.only(bottom: 8),
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: jobs.length,
+        itemBuilder: (context, index) {
+          final job = jobs[index];
+          final isSelected = job.jobId == currentJob.jobId;
+          return Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: ChoiceChip(
+              label: Text(job.title),
+              selected: isSelected,
+              onSelected: (selected) {
+                if (selected) {
+                  setState(() => _selectedAssignedJobId = job.jobId);
+                }
+              },
+              selectedColor: AppColors.primary,
+              labelStyle: TextStyle(color: isSelected ? Colors.white : AppColors.textPrimary),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   Widget _buildOngoingWorkDashboard(JobModel job, {required bool isWorker, required AuthProvider auth}) {
     final iMarkedComplete = isWorker ? job.workerCompleted : job.clientCompleted;
     final otherMarkedComplete = isWorker ? job.clientCompleted : job.workerCompleted;
     final completeField = isWorker ? 'workerCompleted' : 'clientCompleted';
+    final otherUid = isWorker ? job.clientUid : (job.assignedWorkerUid ?? '');
 
     return Container(
       decoration: const BoxDecoration(
@@ -691,13 +756,15 @@ class _HomeScreenState extends State<HomeScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Work Ongoing', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppColors.primary)),
-                  const SizedBox(height: 4),
-                  Text(job.title, style: const TextStyle(color: AppColors.textSecondary, fontSize: 14)),
-                ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Work Ongoing', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppColors.primary)),
+                    const SizedBox(height: 4),
+                    Text(job.title, style: const TextStyle(color: AppColors.textSecondary, fontSize: 14)),
+                  ],
+                ),
               ),
               if (iMarkedComplete)
                 const Chip(
@@ -706,7 +773,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 )
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
+          
+          if (otherUid.isNotEmpty)
+            UserDetailsCard(uid: otherUid, isWorker: isWorker),
+
           Row(
             children: [
               Expanded(
@@ -776,8 +847,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 final confirm = await showDialog<bool>(
                   context: context,
                   builder: (ctx) => AlertDialog(
-                    title: const Text('Cancel Job?'),
-                    content: const Text('Are you sure you want to cancel this ongoing job?'),
+                    title: Text(isWorker ? 'Unassign Job?' : 'Cancel Job?'),
+                    content: Text(isWorker 
+                        ? 'Are you sure you want to drop this job? It will be made available for other workers.'
+                        : 'Are you sure you want to cancel this ongoing job?'),
                     actions: [
                       TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('No')),
                       TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Yes', style: TextStyle(color: AppColors.error))),
@@ -785,9 +858,19 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 );
                 if (confirm == true) {
-                  await FirebaseFirestore.instance.collection('jobs').doc(job.jobId).update({
-                    'status': 'cancelled',
-                  });
+                  final updateData = isWorker
+                      ? <String, dynamic>{
+                          'status': 'open',
+                          'assignedWorkerUid': FieldValue.delete(),
+                          'startedAt': FieldValue.delete(),
+                          'workerCompleted': false,
+                          'clientCompleted': false,
+                        }
+                      : <String, dynamic>{
+                          'status': 'cancelled',
+                        };
+                        
+                  await FirebaseFirestore.instance.collection('jobs').doc(job.jobId).update(updateData);
                   if (mounted) {
                     setState(() {
                       _activeRoutes.remove(job.jobId);
@@ -796,13 +879,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 }
               },
               style: TextButton.styleFrom(foregroundColor: AppColors.error),
-              child: const Text('Cancel Job'),
+              child: Text(isWorker ? 'Drop Job' : 'Cancel Job'),
             ),
           ),
         ],
       ),
     );
   }
+
 
   List<Marker> _myLocationMarker(LocationProvider location) {
     if (!location.hasLocation) return [];
@@ -998,3 +1082,82 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
+
+class UserDetailsCard extends StatefulWidget {
+  final String uid;
+  final bool isWorker;
+
+  const UserDetailsCard({super.key, required this.uid, required this.isWorker});
+
+  @override
+  State<UserDetailsCard> createState() => _UserDetailsCardState();
+}
+
+class _UserDetailsCardState extends State<UserDetailsCard> {
+  late Future<DocumentSnapshot> _userFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _userFuture = FirebaseFirestore.instance.collection('users').doc(widget.uid).get();
+  }
+
+  @override
+  void didUpdateWidget(covariant UserDetailsCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.uid != widget.uid) {
+      _userFuture = FirebaseFirestore.instance.collection('users').doc(widget.uid).get();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<DocumentSnapshot>(
+      future: _userFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (!snapshot.hasData) return const SizedBox.shrink();
+        final data = snapshot.data!.data() as Map<String, dynamic>?;
+        if (data == null) return const SizedBox.shrink();
+        
+        final roleLabel = widget.isWorker ? 'Client' : 'Worker';
+        final name = data['name'] ?? 'Unknown';
+        final email = data['email'] ?? 'No email';
+        final roleColor = widget.isWorker ? Colors.blue : Colors.green;
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade50,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey.shade200),
+          ),
+          child: Row(
+            children: [
+              CircleAvatar(
+                backgroundColor: roleColor.withValues(alpha: 0.1),
+                child: Text(
+                  name.isNotEmpty ? name[0].toUpperCase() : '?',
+                  style: TextStyle(color: roleColor, fontWeight: FontWeight.bold),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('$roleLabel: $name', style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+                    Text(email, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
