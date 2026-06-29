@@ -7,12 +7,20 @@ import '../../core/utils/distance_calculator.dart';
 import '../../models/worker_model.dart';
 import '../chat/chat_screen.dart';
 import '../../core/utils/profile_image_helper.dart';
+import 'hire_worker_screen.dart';
+
 
 class WorkerProfileScreen extends StatelessWidget {
   final WorkerModel worker;
   final bool showBackButton;
+  final bool hideActionButtons;
 
-  const WorkerProfileScreen({super.key, required this.worker, this.showBackButton = true});
+  const WorkerProfileScreen({
+    super.key,
+    required this.worker,
+    this.showBackButton = true,
+    this.hideActionButtons = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -20,7 +28,7 @@ class WorkerProfileScreen extends StatelessWidget {
       backgroundColor: AppColors.background,
       // ── Pinned action buttons — same position in both the
       // collapsed bottom-sheet and the expanded full-profile screen ──
-      bottomNavigationBar: _buildActionBar(context),
+      bottomNavigationBar: hideActionButtons ? null : _buildActionBar(context),
       body: CustomScrollView(
         slivers: [
           SliverToBoxAdapter(child: _buildPhotoBanner(context)),
@@ -148,9 +156,11 @@ class WorkerProfileScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(30),
                   onTap: worker.isAvailable
                       ? () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text('Hire flow coming soon!')),
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => HireWorkerScreen(worker: worker),
+                      ),
                     );
                   }
                       : null,

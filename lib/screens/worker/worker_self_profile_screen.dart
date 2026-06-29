@@ -180,6 +180,7 @@ class _PreviewTab extends StatelessWidget {
     return WorkerProfileScreen(
       worker: worker,
       showBackButton: false,
+      hideActionButtons: true,
     );
   }
 }

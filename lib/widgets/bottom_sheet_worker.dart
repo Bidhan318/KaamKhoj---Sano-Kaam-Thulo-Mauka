@@ -7,6 +7,7 @@ import '../models/worker_model.dart';
 import '../core/utils/distance_calculator.dart';
 import '../screens/chat/chat_screen.dart';
 import '../screens/worker/worker_profile_screen.dart';
+import '../screens/worker/hire_worker_screen.dart';
 import '../core/utils/profile_image_helper.dart';
 
 class BottomSheetWorker extends StatelessWidget {
@@ -276,7 +277,7 @@ class BottomSheetWorker extends StatelessWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => WorkerProfileScreen(worker: worker),
+                              builder: (_) => HireWorkerScreen(worker: worker),
                             ),
                           );
                         },

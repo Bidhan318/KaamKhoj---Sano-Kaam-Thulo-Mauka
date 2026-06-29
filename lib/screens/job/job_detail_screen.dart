@@ -63,7 +63,7 @@ class JobDetailScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
     final isWorker = auth.isWorker;
-    final isOpen = job.status == 'open';
+    final isOpen = job.status == 'open' && (job.assignedWorkerUid == null || job.assignedWorkerUid == auth.user!.uid);
 
     return Scaffold(
       backgroundColor: AppColors.background,
