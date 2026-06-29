@@ -254,33 +254,38 @@ class _JobListScreenState extends State<JobListScreen> {
                 
                 // ── Job List ──
                 Expanded(
-                  child: StreamBuilder<QuerySnapshot>(
-                    stream: FirebaseFirestore.instance
-                        .collection('jobs')
-                        .where('status', isEqualTo: 'open')
-                        .snapshots(),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Center(child: CircularProgressIndicator(color: AppColors.primary));
-                      }
+                  child: Builder(
+                    builder: (context) {
+                      return StreamBuilder<QuerySnapshot>(
+                        // Server-side: only fetch public open jobs (not direct hires)
+                        stream: FirebaseFirestore.instance
+                            .collection('jobs')
+                            .where('status', isEqualTo: 'open')
+                            .where('isDirectHire', isEqualTo: false)
+                            .snapshots(),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState == ConnectionState.waiting) {
+                            return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+                          }
 
-                      if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                        return Center(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.work_off, size: 64, color: AppColors.textSecondary.withValues(alpha: 0.5)),
-                              const SizedBox(height: 16),
-                              Text('No open jobs yet',
-                                  style: TextStyle(color: AppColors.textSecondary, fontSize: 16)),
-                            ],
-                          ),
-                        );
-                      }
+                          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                            return Center(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.work_off, size: 64, color: AppColors.textSecondary.withValues(alpha: 0.5)),
+                                  const SizedBox(height: 16),
+                                  Text('No open jobs yet',
+                                      style: TextStyle(color: AppColors.textSecondary, fontSize: 16)),
+                                ],
+                              ),
+                            );
+                          }
 
-                      var jobs = snapshot.data!.docs
-                          .map((doc) => JobModel.fromMap(doc.data() as Map<String, dynamic>, doc.id))
-                          .toList();
+                          var jobs = snapshot.data!.docs
+                              .map((doc) => JobModel.fromMap(doc.data() as Map<String, dynamic>, doc.id))
+                              .where((job) => job.assignedWorkerUid == null)
+                              .toList();
 
                       // Sort locally
                       jobs.sort((a, b) => b.postedAt.compareTo(a.postedAt));
@@ -334,6 +339,8 @@ class _JobListScreenState extends State<JobListScreen> {
                           itemCount: jobs.length,
                           itemBuilder: (context, i) => JobCard(job: jobs[i]),
                         ),
+                      );
+                        },
                       );
                     },
                   ),

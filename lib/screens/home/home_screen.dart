@@ -240,217 +240,244 @@ class _HomeScreenState extends State<HomeScreen> {
     final centerLat = location.hasLocation ? location.latitude : _defaultLat;
     final centerLon = location.hasLocation ? location.longitude : _defaultLon;
 
-    return Scaffold(
-      key: _scaffoldKey,
-      drawer: _buildDrawer(auth),
-      body: Stack(
-        children: [
-          // ── Map ──────────────────────────────────────────────────────────
-          isWorker
-              ? _buildWorkerMapView(centerLat, centerLon, location, auth)
-              : _buildClientMapView(centerLat, centerLon, location, workerProvider, auth),
+    final requestsStream = isWorker
+        ? FirebaseFirestore.instance
+            .collection('jobs')
+            .where('assignedWorkerUid', isEqualTo: auth.user!.uid)
+            .where('status', isEqualTo: 'open')
+            .snapshots()
+            .map((snap) => snap.docs.map((doc) => JobModel.fromMap(doc.data(), doc.id)).toList())
+        : Stream<List<JobModel>>.value([]);
 
-          // ── Custom Gradient Header ───────────────────────────────────────
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: Container(
-              padding: EdgeInsets.only(
-                top: MediaQuery.of(context).padding.top + 16,
-                bottom: 40,
-                left: 16,
-                right: 16,
-              ),
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xFF1E293B), Color(0xFF0F766E)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(32),
-                  bottomRight: Radius.circular(32),
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.menu, color: Colors.white),
-                    onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+    return StreamBuilder<List<JobModel>>(
+      stream: requestsStream,
+      builder: (context, requestSnapshot) {
+        final requests = requestSnapshot.data ?? [];
+        final hasRequest = isWorker && requests.isNotEmpty;
+
+        // Height of hire request pager: ~220 when no ongoing job, else 0 (placed inline above dashboard)
+        final double bottomOffset = (_hasOngoingJob || hasRequest) ? 220.0 : 24.0;
+
+        return Scaffold(
+          key: _scaffoldKey,
+          drawer: _buildDrawer(auth),
+          body: Stack(
+            children: [
+              // ── Map ──────────────────────────────────────────────────────────
+              isWorker
+                  ? _buildWorkerMapView(centerLat, centerLon, location, auth)
+                  : _buildClientMapView(centerLat, centerLon, location, workerProvider, auth),
+
+              // ── Custom Gradient Header ───────────────────────────────────────
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  padding: EdgeInsets.only(
+                    top: MediaQuery.of(context).padding.top + 16,
+                    bottom: 40,
+                    left: 16,
+                    right: 16,
                   ),
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Color(0xFF1E293B), Color(0xFF0F766E)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.only(
+                      bottomLeft: Radius.circular(32),
+                      bottomRight: Radius.circular(32),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        'KaamKhoj',
-                        style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+                      IconButton(
+                        icon: const Icon(Icons.menu, color: Colors.white),
+                        onPressed: () => _scaffoldKey.currentState?.openDrawer(),
                       ),
-                      Row(
+                      Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.location_on, color: Colors.white70, size: 14),
-                          const SizedBox(width: 4),
-                          Text(
-                            location.currentAddress.isNotEmpty ? location.currentAddress : 'Locating...',
-                            style: const TextStyle(color: Colors.white70, fontSize: 12),
+                          const Text(
+                            'KaamKhoj',
+                            style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+                          ),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.location_on, color: Colors.white70, size: 14),
+                              const SizedBox(width: 4),
+                              Text(
+                                location.currentAddress.isNotEmpty ? location.currentAddress : 'Locating...',
+                                style: const TextStyle(color: Colors.white70, fontSize: 12),
+                              ),
+                            ],
                           ),
                         ],
                       ),
+                      IconButton(
+                        icon: Icon(isWorker ? Icons.work_outline : Icons.people_outline, color: Colors.white),
+                        tooltip: isWorker ? 'Browse Jobs' : 'Browse Workers',
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => isWorker ? const JobListScreen() : const WorkerListScreen(),
+                          ),
+                        ),
+                      ),
                     ],
                   ),
-                  IconButton(
-                    icon: Icon(isWorker ? Icons.work_outline : Icons.people_outline, color: Colors.white),
-                    tooltip: isWorker ? 'Browse Jobs' : 'Browse Workers',
-                    onPressed: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => isWorker ? const JobListScreen() : const WorkerListScreen(),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          // ── Floating Search Bar ──────────────────────────────────────────
-          if (!isWorker)
-            Positioned(
-              top: MediaQuery.of(context).padding.top + 100,
-            left: 24,
-            right: 24,
-            child: Container(
-              height: 50,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(25),
-                boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, 4))],
-              ),
-              child: TextField(
-                controller: _searchController,
-                decoration: const InputDecoration(
-                  hintText: 'Search workers by skill...',
-                  hintStyle: TextStyle(color: Colors.grey),
-                  prefixIcon: Icon(Icons.search, color: Colors.grey),
-                  border: InputBorder.none,
-                  contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-                ),
-                onChanged: (value) {
-                  workerProvider.setSkillFilter(value);
-                },
-              ),
-            ),
-          ),
-
-
-
-          // ── Loading overlay ───────────────────────────────────────────────
-          if (location.isLoading)
-            const Center(child: CircularProgressIndicator()),
-
-          // ── Error banner ──────────────────────────────────────────────────
-          if (location.errorMessage != null)
-            Positioned(
-              top: MediaQuery.of(context).padding.top + 160,
-              left: 0,
-              right: 0,
-              child: Container(
-                color: AppColors.error,
-                padding: const EdgeInsets.all(8),
-                child: Text(
-                  location.errorMessage!,
-                  style: const TextStyle(color: Colors.white),
-                  textAlign: TextAlign.center,
                 ),
               ),
-            ),
 
-          // ── Bottom Action Buttons ─────────────────────────────────────────
-          Positioned(
-            bottom: _hasOngoingJob ? 220 : 24,
-            right: 24,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                // My Location Button
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
+              // ── Floating Search Bar ──────────────────────────────────────────
+              if (!isWorker)
+                Positioned(
+                  top: MediaQuery.of(context).padding.top + 100,
+                  left: 24,
+                  right: 24,
                   child: Container(
+                    height: 50,
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4)],
+                      borderRadius: BorderRadius.circular(25),
+                      boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, 4))],
                     ),
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(20),
-                        onTap: () async {
-                          await location.fetchCurrentLocation();
-                          if (location.hasLocation) {
-                            _mapController.move(
-                              LatLng(location.latitude, location.longitude),
-                              14.0,
-                            );
-                          }
-                        },
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: const [
-                              Text('My location', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-                              SizedBox(width: 6),
-                              Icon(Icons.my_location, size: 16),
-                            ],
-                          ),
-                        ),
+                    child: TextField(
+                      controller: _searchController,
+                      decoration: const InputDecoration(
+                        hintText: 'Search workers by skill...',
+                        hintStyle: TextStyle(color: Colors.grey),
+                        prefixIcon: Icon(Icons.search, color: Colors.grey),
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
                       ),
+                      onChanged: (value) {
+                        workerProvider.setSkillFilter(value);
+                      },
                     ),
                   ),
                 ),
-                // Post a Job Button
-                if (!isWorker)
-                  Container(
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF1E293B), Color(0xFF0F766E)],
-                        begin: Alignment.centerLeft,
-                        end: Alignment.centerRight,
-                      ),
-                      borderRadius: BorderRadius.circular(25),
-                      boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 6, offset: Offset(0, 3))],
+
+              // ── Loading overlay ───────────────────────────────────────────────
+              if (location.isLoading)
+                const Center(child: CircularProgressIndicator()),
+
+              // ── Error banner ──────────────────────────────────────────────────
+              if (location.errorMessage != null)
+                Positioned(
+                  top: MediaQuery.of(context).padding.top + 160,
+                  left: 0,
+                  right: 0,
+                  child: Container(
+                    color: AppColors.error,
+                    padding: const EdgeInsets.all(8),
+                    child: Text(
+                      location.errorMessage!,
+                      style: const TextStyle(color: Colors.white),
+                      textAlign: TextAlign.center,
                     ),
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(25),
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const PostJobScreen()),
+                  ),
+                ),
+
+              // ── Bottom Action Buttons ─────────────────────────────────────────
+              Positioned(
+                bottom: bottomOffset,
+                right: 24,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    // My Location Button
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4)],
                         ),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: const [
-                              Text('Post a Job', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
-                              SizedBox(width: 6),
-                              Icon(Icons.add, color: Colors.white, size: 18),
-                            ],
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(20),
+                            onTap: () async {
+                              await location.fetchCurrentLocation();
+                              if (location.hasLocation) {
+                                _mapController.move(
+                                  LatLng(location.latitude, location.longitude),
+                                  14.0,
+                                );
+                              }
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: const [
+                                  Text('My location', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                                  SizedBox(width: 6),
+                                  Icon(Icons.my_location, size: 16),
+                                ],
+                              ),
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-              ],
-            ),
+                    // Post a Job Button
+                    if (!isWorker)
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF1E293B), Color(0xFF0F766E)],
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                          ),
+                          borderRadius: BorderRadius.circular(25),
+                          boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 6, offset: Offset(0, 3))],
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(25),
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => const PostJobScreen()),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: const [
+                                  Text('Post a Job', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                                  SizedBox(width: 6),
+                                  Icon(Icons.add, color: Colors.white, size: 18),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+
+              // ── Direct Hire Request Banner for Worker (only when no ongoing job) ──
+              if (hasRequest && !_hasOngoingJob)
+                Positioned(
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  child: _buildHireRequestBannerPaged(requests, context),
+                ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -630,9 +657,11 @@ class _HomeScreenState extends State<HomeScreen> {
               : FirebaseFirestore.instance
                   .collection('jobs')
                   .where('status', isEqualTo: 'open')
+                  .where('isDirectHire', isEqualTo: false)
                   .snapshots()
                   .map((snap) => snap.docs
                       .map((doc) => JobModel.fromMap(doc.data(), doc.id))
+                      .where((job) => job.assignedWorkerUid == null)
                       .toList()),
           builder: (context, snapshot) {
             final openJobs = snapshot.data ?? [];
@@ -661,7 +690,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ? _activeRoutes[assignedJob.jobId]!
                 : null;
 
-            return Stack(
+            Widget mainContent = Stack(
               children: [
                 FlutterMap(
                   mapController: _mapController,
@@ -688,18 +717,34 @@ class _HomeScreenState extends State<HomeScreen> {
                     bottom: 0,
                     left: 0,
                     right: 0,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        if (assignedJobs.length > 1)
-                          _buildJobSwitcher(assignedJobs, assignedJob),
-                        _buildOngoingWorkDashboard(assignedJob, isWorker: true, auth: auth),
-                      ],
+                    child: StreamBuilder<List<JobModel>>(
+                      stream: FirebaseFirestore.instance
+                          .collection('jobs')
+                          .where('assignedWorkerUid', isEqualTo: auth.user!.uid)
+                          .where('status', isEqualTo: 'open')
+                          .snapshots()
+                          .map((snap) => snap.docs.map((doc) => JobModel.fromMap(doc.data(), doc.id)).toList()),
+                      builder: (context, pendingSnap) {
+                        final pendingRequests = pendingSnap.data ?? [];
+                        return Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            // Show pending hire requests above the ongoing dashboard
+                            if (pendingRequests.isNotEmpty)
+                              _buildHireRequestBannerPaged(pendingRequests, context, compact: true),
+                            if (assignedJobs.length > 1)
+                              _buildJobSwitcher(assignedJobs, assignedJob!),
+                            _buildOngoingWorkDashboard(assignedJob!, isWorker: true, auth: auth),
+                          ],
+                        );
+                      },
                     ),
                   ),
               ],
             );
+
+            return mainContent;
           },
         );
       }
@@ -1080,6 +1125,300 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
     );
+  }
+
+  Widget _buildHireRequestBannerPaged(List<JobModel> jobs, BuildContext context, {bool compact = false}) {
+    final PageController pageController = PageController();
+    return StatefulBuilder(
+      builder: (context, setPageState) {
+        int currentPage = 0;
+        return StatefulBuilder(
+          builder: (context, setInner) {
+            return Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: compact
+                    ? BorderRadius.circular(0)
+                    : const BorderRadius.vertical(top: Radius.circular(24)),
+                boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 10, offset: Offset(0, -2))],
+                border: compact
+                    ? const Border(bottom: BorderSide(color: Color(0xFFE2E8F0), width: 1))
+                    : null,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Header row with counter
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(7),
+                          decoration: BoxDecoration(
+                            color: AppColors.accent.withValues(alpha: 0.15),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.handshake_outlined, color: AppColors.accent, size: 18),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Direct Hire Request',
+                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.textPrimary),
+                              ),
+                              Text(
+                                'Someone has requested to hire you.',
+                                style: const TextStyle(color: AppColors.textSecondary, fontSize: 11),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (jobs.length > 1)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: AppColors.accent.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              '${currentPage + 1} / ${jobs.length}',
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.accent),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  // PageView of requests
+                  SizedBox(
+                    height: compact ? 140 : 170,
+                    child: PageView.builder(
+                      controller: pageController,
+                      itemCount: jobs.length,
+                      onPageChanged: (idx) => setInner(() => currentPage = idx),
+                      itemBuilder: (context, idx) {
+                        final job = jobs[idx];
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              // Job info card
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.shade50,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: Colors.grey.shade200),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            job.title,
+                                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textPrimary),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          if (job.description.isNotEmpty)
+                                            Text(
+                                              job.description,
+                                              style: const TextStyle(color: AppColors.textSecondary, fontSize: 11),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'NPR ${job.budget.toInt()}',
+                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.success),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              // Action buttons
+                              Row(
+                                children: [
+                                  // Decline
+                                  Expanded(
+                                    child: OutlinedButton(
+                                      onPressed: () => _declineHireRequest(job, context),
+                                      style: OutlinedButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(vertical: 10),
+                                        foregroundColor: AppColors.error,
+                                        side: const BorderSide(color: AppColors.error),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                      ),
+                                      child: const Text('Decline', style: TextStyle(fontSize: 12)),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  // View Details
+                                  Expanded(
+                                    child: OutlinedButton(
+                                      onPressed: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(builder: (_) => JobDetailScreen(job: job)),
+                                        );
+                                      },
+                                      style: OutlinedButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(vertical: 10),
+                                        foregroundColor: AppColors.primary,
+                                        side: const BorderSide(color: AppColors.primary),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                      ),
+                                      child: const Text('View', style: TextStyle(fontSize: 12)),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  // Accept Job
+                                  Expanded(
+                                    child: ElevatedButton(
+                                      onPressed: () => _acceptHireRequest(job, context),
+                                      style: ElevatedButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(vertical: 10),
+                                        backgroundColor: AppColors.success,
+                                        foregroundColor: Colors.white,
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                        elevation: 0,
+                                      ),
+                                      child: const Text('Accept', style: TextStyle(fontSize: 12)),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  // Page indicator dots (only if multiple)
+                  if (jobs.length > 1)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(jobs.length, (i) {
+                          return AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            margin: const EdgeInsets.symmetric(horizontal: 3),
+                            width: currentPage == i ? 16 : 6,
+                            height: 6,
+                            decoration: BoxDecoration(
+                              color: currentPage == i ? AppColors.accent : Colors.grey.shade300,
+                              borderRadius: BorderRadius.circular(3),
+                            ),
+                          );
+                        }),
+                      ),
+                    )
+                  else
+                    const SizedBox(height: 12),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _acceptHireRequest(JobModel job, BuildContext context) async {
+    try {
+      final auth = context.read<AuthProvider>();
+      
+      // Check if worker already has an active assigned job
+      final activeJobsQuery = await FirebaseFirestore.instance
+          .collection('jobs')
+          .where('assignedWorkerUid', isEqualTo: auth.user!.uid)
+          .where('status', isEqualTo: 'assigned')
+          .get();
+          
+      if (activeJobsQuery.docs.isNotEmpty) {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('You can only accept one job at a time. Please finish your ongoing work first.'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+        return;
+      }
+
+      await FirebaseFirestore.instance
+          .collection('jobs')
+          .doc(job.jobId)
+          .update({
+        'status': 'assigned',
+        'assignedWorkerUid': auth.user!.uid,
+        'startedAt': DateTime.now().toIso8601String(),
+      });
+
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Job accepted! Routing you to the location...'),
+          backgroundColor: AppColors.success,
+        ),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
+    }
+  }
+
+  Future<void> _declineHireRequest(JobModel job, BuildContext context) async {
+    try {
+      final auth = context.read<AuthProvider>();
+
+      // Step 1: Temporarily accept the job under security rules (open -> assigned)
+      await FirebaseFirestore.instance
+          .collection('jobs')
+          .doc(job.jobId)
+          .update({
+        'status': 'assigned',
+        'assignedWorkerUid': auth.user!.uid,
+        'startedAt': DateTime.now().toIso8601String(),
+      });
+
+      // Step 2: Immediately drop the job under security rules (assigned -> open)
+      await FirebaseFirestore.instance
+          .collection('jobs')
+          .doc(job.jobId)
+          .update({
+        'status': 'open',
+        'assignedWorkerUid': FieldValue.delete(),
+        'startedAt': FieldValue.delete(),
+        'workerCompleted': false,
+        'clientCompleted': false,
+      });
+
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Hire request declined.'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error declining: $e')),
+      );
+    }
   }
 }
 
