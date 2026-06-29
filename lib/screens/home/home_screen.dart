@@ -558,7 +558,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     if (routeForJob != null)
                       PolylineLayer(
                         polylines: [
-                          Polyline(points: routeForJob, strokeWidth: 4.0, color: Colors.blueAccent),
+                          Polyline(points: routeForJob, strokeWidth: 4.0, color: AppColors.secondaryDark),
                         ],
                       ),
                     MarkerLayer(markers: [...activeJobMarkers, ...workerMarkers, ...myMarker]),
@@ -677,7 +677,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     if (routeForJob != null)
                       PolylineLayer(
                         polylines: [
-                          Polyline(points: routeForJob, strokeWidth: 4.0, color: Colors.blueAccent),
+                          Polyline(points: routeForJob, strokeWidth: 4.0, color: AppColors.secondaryDark),
                         ],
                       ),
                     MarkerLayer(markers: [...jobMarkers, ...myMarker]),
@@ -1160,4 +1160,4 @@ class _UserDetailsCardState extends State<UserDetailsCard> {
       },
     );
   }
-}
+}
