@@ -3,6 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../providers/auth_provider.dart';
 import '../home/home_screen.dart';
@@ -67,111 +68,183 @@ class _FingerprintSetupScreenState extends State<FingerprintSetupScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 40),
-          child: Column(
-            children: [
-              const Spacer(),
- 
-              // ── Icon ──
-              Container(
-                width: 100,
-                height: 100,
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.fingerprint,
-                  size: 56,
-                  color: AppColors.primary,
-                ),
-              ),
- 
-              const SizedBox(height: 32),
- 
-              // ── Title ──
-              Text(
-                'Enable Fingerprint Login?',
-                style: Theme.of(context).textTheme.headlineMedium,
-                textAlign: TextAlign.center,
-              ),
- 
-              const SizedBox(height: 16),
- 
-              Text(
-                'Next time you open KaamKhoj, just tap your fingerprint — '
-                'no need to type your password.',
-                style: Theme.of(context)
-                    .textTheme
-                    .bodyMedium
-                    ?.copyWith(color: AppColors.textSecondary),
-                textAlign: TextAlign.center,
-              ),
- 
-              const SizedBox(height: 12),
- 
-              // Small note about what gets stored
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.05),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.info_outline,
-                        size: 16, color: AppColors.primary),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Your login details are stored securely on this device only.',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: AppColors.primary,
-                            ),
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Color(0xFFE8EAF6),
+              Colors.white,
+              Colors.white,
+            ],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            stops: [0.0, 0.35, 1.0],
+          ),
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 40),
+            child: Column(
+              children: [
+                const Spacer(),
+                // Icon
+                Container(
+                  width: 130,
+                  height: 130,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF14A085).withOpacity(0.1),
+                        blurRadius: 20,
+                        offset: const Offset(0, 10),
                       ),
+                    ],
+                  ),
+                  child: const Center(
+                    child: Icon(
+                      Icons.fingerprint,
+                      size: 64,
+                      color: Color(0xFF2E3F80),
                     ),
-                  ],
-                ),
-              ),
- 
-              const Spacer(),
- 
-              // ── Enable button ──
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: _isProcessing ? null : _enableFingerprint,
-                  icon: _isProcessing
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                              color: Colors.white, strokeWidth: 2),
-                        )
-                      : const Icon(Icons.fingerprint),
-                  label:
-                      Text(_isProcessing ? 'Scanning...' : 'Enable Fingerprint'),
-                ),
-              ),
- 
-              const SizedBox(height: 12),
- 
-              // ── Skip button ──
-              SizedBox(
-                width: double.infinity,
-                child: TextButton(
-                  onPressed: _isProcessing ? null : _skip,
-                  child: const Text(
-                    'Skip for now',
-                    style: TextStyle(color: AppColors.textSecondary),
                   ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 40),
+                // Title
+                Text(
+                  'Enable Fingerprint Login?',
+                  style: GoogleFonts.outfit(
+                    fontSize: 28,
+                    fontWeight: FontWeight.w900,
+                    color: const Color(0xFF1A1A2C),
+                    letterSpacing: 0.5,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Next time you open KaamKhoj, just tap your fingerprint — no need to type your password.',
+                  style: GoogleFonts.inter(
+                    fontSize: 15,
+                    color: Colors.grey.shade600,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                // Note
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.03),
+                        blurRadius: 15,
+                        offset: const Offset(0, 5),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.info_outline, size: 20, color: Color(0xFF14A085)),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Your login details are stored securely on this device only.',
+                          style: GoogleFonts.inter(
+                            fontSize: 13,
+                            color: const Color(0xFF1A1A2C),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Spacer(),
+                // Enable button
+                StatefulBuilder(
+                  builder: (context, setStateBtn) {
+                    bool isPressed = false;
+                    return GestureDetector(
+                      onTapDown: (_) => setStateBtn(() => isPressed = true),
+                      onTapUp: (_) => setStateBtn(() => isPressed = false),
+                      onTapCancel: () => setStateBtn(() => isPressed = false),
+                      onTap: _isProcessing ? null : _enableFingerprint,
+                      child: AnimatedScale(
+                        scale: isPressed ? 0.97 : 1.0,
+                        duration: const Duration(milliseconds: 100),
+                        curve: Curves.easeOut,
+                        child: Container(
+                          width: double.infinity,
+                          height: 56,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(28),
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF2E3F80), Color(0xFF14A085)],
+                              begin: Alignment.centerLeft,
+                              end: Alignment.centerRight,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF14A085).withOpacity(0.35),
+                                blurRadius: 15,
+                                offset: const Offset(0, 6),
+                              ),
+                            ],
+                          ),
+                          child: Center(
+                            child: _isProcessing
+                                ? const SizedBox(
+                                    width: 24,
+                                    height: 24,
+                                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                                  )
+                                : Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.fingerprint, color: Colors.white),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        'Enable Fingerprint',
+                                        style: GoogleFonts.outfit(
+                                          color: Colors.white,
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 16),
+                // Skip button
+                TextButton(
+                  onPressed: _isProcessing ? null : _skip,
+                  style: TextButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 56),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+                  ),
+                  child: Text(
+                    'Skip for now',
+                    style: GoogleFonts.inter(
+                      color: Colors.grey.shade600,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

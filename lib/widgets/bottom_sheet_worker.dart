@@ -7,6 +7,7 @@ import '../models/worker_model.dart';
 import '../core/utils/distance_calculator.dart';
 import '../screens/chat/chat_screen.dart';
 import '../screens/worker/worker_profile_screen.dart';
+import '../screens/worker/hire_worker_screen.dart';
 import '../core/utils/profile_image_helper.dart';
 
 class BottomSheetWorker extends StatelessWidget {
@@ -103,7 +104,17 @@ class BottomSheetWorker extends StatelessWidget {
                           worker.name,
                           style: Theme.of(context).textTheme.titleLarge,
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 2),
+                        if (worker.email.isNotEmpty) ...[
+                          Text(
+                            worker.email,
+                            style: const TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 13,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                        ],
                         Row(
                           children: [
                             const Icon(Icons.star,
@@ -266,7 +277,7 @@ class BottomSheetWorker extends StatelessWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => WorkerProfileScreen(worker: worker),
+                              builder: (_) => HireWorkerScreen(worker: worker),
                             ),
                           );
                         },

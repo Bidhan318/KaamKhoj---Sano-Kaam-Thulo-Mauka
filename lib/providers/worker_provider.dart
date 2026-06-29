@@ -60,11 +60,12 @@ class WorkerProvider extends ChangeNotifier {
   Stream<List<WorkerModel>> watchNearbyWorkers({
     required double clientLat,
     required double clientLon,
+    double? radiusKm,
   }) {
     return _locationService.watchNearbyWorkers(
       clientLat: clientLat,
       clientLon: clientLon,
-      radiusKm: _searchRadius,
+      radiusKm: radiusKm ?? _searchRadius,
     );
   }
 

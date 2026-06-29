@@ -7,11 +7,20 @@ import '../../core/utils/distance_calculator.dart';
 import '../../models/worker_model.dart';
 import '../chat/chat_screen.dart';
 import '../../core/utils/profile_image_helper.dart';
+import 'hire_worker_screen.dart';
+
 
 class WorkerProfileScreen extends StatelessWidget {
   final WorkerModel worker;
+  final bool showBackButton;
+  final bool hideActionButtons;
 
-  const WorkerProfileScreen({super.key, required this.worker});
+  const WorkerProfileScreen({
+    super.key,
+    required this.worker,
+    this.showBackButton = true,
+    this.hideActionButtons = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -19,7 +28,7 @@ class WorkerProfileScreen extends StatelessWidget {
       backgroundColor: AppColors.background,
       // ── Pinned action buttons — same position in both the
       // collapsed bottom-sheet and the expanded full-profile screen ──
-      bottomNavigationBar: _buildActionBar(context),
+      bottomNavigationBar: hideActionButtons ? null : _buildActionBar(context),
       body: CustomScrollView(
         slivers: [
           SliverToBoxAdapter(child: _buildPhotoBanner(context)),
@@ -37,6 +46,18 @@ class WorkerProfileScreen extends StatelessWidget {
                     ),
                   ),
                 ),
+                if (worker.email.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Center(
+                    child: Text(
+                      worker.email,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 8),
                 Center(child: _buildRatingRow()),
                 const SizedBox(height: 18),
@@ -135,9 +156,11 @@ class WorkerProfileScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(30),
                   onTap: worker.isAvailable
                       ? () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text('Hire flow coming soon!')),
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => HireWorkerScreen(worker: worker),
+                      ),
                     );
                   }
                       : null,
@@ -313,23 +336,24 @@ class WorkerProfileScreen extends StatelessWidget {
         ),
 
         // Back button
-        Positioned(
-          top: 0,
-          left: 8,
-          child: SafeArea(
-            child: Container(
-              margin: const EdgeInsets.only(top: 8),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.20),
-                shape: BoxShape.circle,
-              ),
-              child: IconButton(
-                icon: const Icon(Icons.arrow_back, color: Colors.white),
-                onPressed: () => Navigator.pop(context),
+        if (showBackButton)
+          Positioned(
+            top: 0,
+            left: 8,
+            child: SafeArea(
+              child: Container(
+                margin: const EdgeInsets.only(top: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.20),
+                  shape: BoxShape.circle,
+                ),
+                child: IconButton(
+                  icon: const Icon(Icons.arrow_back, color: Colors.white),
+                  onPressed: () => Navigator.pop(context),
+                ),
               ),
             ),
           ),
-        ),
       ],
     );
   }

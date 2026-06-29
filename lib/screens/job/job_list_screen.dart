@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../models/job_model.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/location_provider.dart';
+import '../../providers/worker_provider.dart';
+import '../../core/utils/distance_calculator.dart';
+import '../../widgets/distance_badge.dart';
 import 'job_detail_screen.dart';
 
 const List<String> _kSkillCategories = [
@@ -27,6 +33,7 @@ class JobListScreen extends StatefulWidget {
 class _JobListScreenState extends State<JobListScreen> {
   String _selectedSkill = 'All';
   String _searchQuery = '';
+  double _searchRadius = 20;
 
   @override
   Widget build(BuildContext context) {
@@ -189,35 +196,104 @@ class _JobListScreenState extends State<JobListScreen> {
                 
                 const SizedBox(height: 20),
                 
+                // ── Search Radius ──
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                  child: Row(
+                    children: [
+                      const Text(
+                        'Radius',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          '${_searchRadius.toInt()} km',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: SliderTheme(
+                    data: SliderTheme.of(context).copyWith(
+                      activeTrackColor: AppColors.primary,
+                      inactiveTrackColor: Colors.grey.shade300,
+                      thumbColor: Colors.white,
+                      overlayColor: AppColors.primary.withValues(alpha: 0.2),
+                      trackHeight: 4.0,
+                    ),
+                    child: Slider(
+                      value: _searchRadius,
+                      min: 1,
+                      max: 20,
+                      divisions: 19,
+                      onChanged: (val) {
+                        setState(() {
+                          _searchRadius = val;
+                        });
+                      },
+                    ),
+                  ),
+                ),
+                
                 // ── Job List ──
                 Expanded(
-                  child: StreamBuilder<QuerySnapshot>(
-                    stream: FirebaseFirestore.instance
-                        .collection('jobs')
-                        .where('status', isEqualTo: 'open')
-                        .snapshots(),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Center(child: CircularProgressIndicator(color: AppColors.primary));
-                      }
+                  child: Builder(
+                    builder: (context) {
+                      final currentUid = context.read<AuthProvider>().user?.uid;
+                      return StreamBuilder<QuerySnapshot>(
+                        stream: FirebaseFirestore.instance
+                            .collection('jobs')
+                            .where('status', isEqualTo: 'open')
+                            .snapshots(),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState == ConnectionState.waiting) {
+                            return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+                          }
 
-                      if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                        return Center(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.work_off, size: 64, color: AppColors.textSecondary.withValues(alpha: 0.5)),
-                              const SizedBox(height: 16),
-                              Text('No open jobs yet',
-                                  style: TextStyle(color: AppColors.textSecondary, fontSize: 16)),
-                            ],
-                          ),
-                        );
-                      }
+                          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                            return Center(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.work_off, size: 64, color: AppColors.textSecondary.withValues(alpha: 0.5)),
+                                  const SizedBox(height: 16),
+                                  Text('No open jobs yet',
+                                      style: TextStyle(color: AppColors.textSecondary, fontSize: 16)),
+                                ],
+                              ),
+                            );
+                          }
 
-                      var jobs = snapshot.data!.docs
-                          .map((doc) => JobModel.fromMap(doc.data() as Map<String, dynamic>, doc.id))
-                          .toList();
+                          var jobs = snapshot.data!.docs
+                              .map((doc) => JobModel.fromMap(doc.data() as Map<String, dynamic>, doc.id))
+                              .where((job) {
+                                if (job.isDirectHire) {
+                                  // Show direct hire jobs ONLY to the worker being hired
+                                  return job.assignedWorkerUid == currentUid;
+                                } else {
+                                  // Normal open jobs show to everyone
+                                  return job.assignedWorkerUid == null;
+                                }
+                              })
+                              .toList();
 
                       // Sort locally
                       jobs.sort((a, b) => b.postedAt.compareTo(a.postedAt));
@@ -233,6 +309,20 @@ class _JobListScreenState extends State<JobListScreen> {
                           j.title.toLowerCase().contains(_searchQuery) ||
                           j.requiredSkill.toLowerCase().contains(_searchQuery)
                         ).toList();
+                      }
+
+                      // Apply distance filter
+                      final locationProvider = context.read<LocationProvider>();
+                      if (locationProvider.hasLocation) {
+                        jobs = jobs.where((j) {
+                          final dist = DistanceCalculator.calculateDistance(
+                            lat1: locationProvider.latitude,
+                            lon1: locationProvider.longitude,
+                            lat2: j.latitude,
+                            lon2: j.longitude,
+                          );
+                          return dist <= _searchRadius;
+                        }).toList();
                       }
 
                       if (jobs.isEmpty) {
@@ -257,6 +347,8 @@ class _JobListScreenState extends State<JobListScreen> {
                           itemCount: jobs.length,
                           itemBuilder: (context, i) => JobCard(job: jobs[i]),
                         ),
+                      );
+                        },
                       );
                     },
                   ),
@@ -430,19 +522,32 @@ class JobCard extends StatelessWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Row(
-                            children: const [
-                              Icon(Icons.location_on, size: 12, color: AppColors.textSecondary),
-                              SizedBox(width: 4),
-                              Text(
-                                'Kathmandu', // Jobs model currently lacks readable address, using placeholder
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.textPrimary,
-                                ),
-                              ),
-                            ],
+                          Consumer<LocationProvider>(
+                            builder: (context, locationProvider, child) {
+                              if (locationProvider.hasLocation) {
+                                final distance = DistanceCalculator.calculateDistance(
+                                  lat1: locationProvider.latitude,
+                                  lon1: locationProvider.longitude,
+                                  lat2: job.latitude,
+                                  lon2: job.longitude,
+                                );
+                                return DistanceBadge(distanceKm: distance);
+                              }
+                              return Row(
+                                children: const [
+                                  Icon(Icons.location_on, size: 12, color: AppColors.textSecondary),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    'Unknown',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.textPrimary,
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
                           ),
                           Text(
                             'NPR ${job.budget.toInt()}',

@@ -69,8 +69,9 @@ class AuthService {
   }) async {
     final workerData = WorkerModel(
       uid: uid,
+      email: email,
       name: name,
-      phone: email, // using email as identifier 
+      phone: '', 
       skills: [skill],
       ratePerDay: ratePerDay,
       latitude: 0.0,  // will be updated when worker opens the app
