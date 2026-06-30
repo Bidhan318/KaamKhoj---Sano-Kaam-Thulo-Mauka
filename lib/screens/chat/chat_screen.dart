@@ -136,7 +136,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
       body: Container(
         decoration: const BoxDecoration(
-          gradient: AppColors.backgroundGradient,
+          gradient: AppColors.chatBackgroundGradient,
         ),
         child: Column(
           children: [
